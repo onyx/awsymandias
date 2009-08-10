@@ -383,7 +383,9 @@ module Awsymandias
             s.load_balancer :lb, lb_params
           end
         
-          Instance.should_receive(:launch).and_return(stub_instance)
+          db_instance = stub_instance(:instance_id => :anything)
+          s.instance_variable_set :"@instances", { 'db' => db_instance } 
+          Instance.should_receive(:launch).and_return(db_instance)
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
           lb = stub_load_balancer
         
@@ -402,22 +404,24 @@ module Awsymandias
           end
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
         
+          db_instance = stub_instance(:instance_id => :anything)
+          s.instance_variable_set :"@instances", { 'db' => db_instance } 
           Instance.should_receive(:launch).and_return(stub_instance)
           
           lb = stub_load_balancer        
           LoadBalancer.should_receive(:launch).with(lb_params).and_return(lb)
           
-          s.unlaunched_load_balancers[:lb].should_not be_nil
+          s.unlaunched_load_balancers["lb"].should_not be_nil
           s.launch
-          s.unlaunched_load_balancers[:lb].should be_nil
+          s.unlaunched_load_balancers["lb"].should be_nil
         end
       
       end
       
-      describe "launched?" do    
+      describe "launch_begun?" do    
         it "should be false initially" do
           s = ApplicationStack.define("test") { |s|  s.instance :db, :instance_type => InstanceTypes::M1_LARGE }
-          s.launched?.should be_false
+          s.launch_begun?.should be_false
         end
         
         it "should be true if launched and instances are non-empty" do
@@ -425,7 +429,7 @@ module Awsymandias
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
           Instance.stub!(:launch).and_return stub_instance
           s.launch
-          s.launched?.should be_true
+          s.launch_begun?.should be_true
         end
       end
   
@@ -600,7 +604,7 @@ module Awsymandias
           ]
         
           stack = ApplicationStack.new "test"
-          stack.should_receive(:launched?).and_return(true)
+          stack.should_receive(:launch_complete?).and_return(true)
           stack.instance_variable_set :"@instances", {'inst1' => inst1, 'inst2' =>  inst2}
         
           stack.running_cost.should == inst1.running_cost + inst2.running_cost

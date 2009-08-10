@@ -9,7 +9,6 @@ module Awsymandias
         def find(name)
           returning(new(name)) do |stack|
             stack.send(:reload_from_metadata!)
-            return nil unless stack.launched?
           end
         end
 
@@ -89,16 +88,22 @@ module Awsymandias
         
         @unlaunched_load_balancers.each_pair do |lb_name, params|
           instance_names = params[:instances]
-          params[:instances] = params.delete(:instances).map { |instance_name| @instances[instance_name].instance_id } if params[:instances]
+          
+          if params[:instances]
+            params[:instances].each do |instance_name|
+              raise "Load balancer #{lb_name} wants to use instance #{instance_name} but that instance is not launched." if @instances[instance_name.to_s].nil?
+            end
+            params[:instances] = params.delete(:instances).map { |instance_name| @instances[instance_name.to_s].instance_id } 
+          end
           params[:name] = lb_name
           @load_balancers[lb_name] = Awsymandias::LoadBalancer.launch(params)
           @unlaunched_load_balancers.delete lb_name
         end
         store_app_stack_metadata!
-
+        
         attach_volumes
         store_app_stack_metadata!
-
+        
         self
       end
       
@@ -139,7 +144,7 @@ module Awsymandias
       end
       
       def reload
-        raise "Can't reload unless launched" unless (launched? || terminating?)
+        raise "Can't reload unless launched" unless (launch_complete? || terminating?)
         @instances.values.each(&:reload)
         @load_balancers.values.each(&:reload)
         self
@@ -166,16 +171,20 @@ module Awsymandias
         @terminating
       end
 
-      def launched?
+      def launch_begun?
         instances.any?
       end
 
+      def launch_complete?
+        unlaunched_instances.empty? && unlaunched_load_balancers.empty? && !@instances.empty?
+      end
+
       def running?
-        launched? && @instances.values.all?(&:running?)
+        launch_complete? && @instances.values.all?(&:running?)
       end
 
       def terminated?
-        launched? && @instances.values.all?(&:terminated?)
+        launch_begun? && @instances.values.all?(&:terminated?)
       end
 
       def port_open?(port)
@@ -183,7 +192,7 @@ module Awsymandias
       end
 
       def running_cost
-        return Money.new(0) unless launched?
+        return Money.new(0) unless launch_complete?
         @instances.values.sum { |instance| instance.running_cost }
       end
 

@@ -25,6 +25,7 @@ module Awsymandias
     end
     
     def load_balancer(name, configuration = {})
+      name = name.to_s.gsub(/[\W_]+/,'-')
       @defined_load_balancers[name] = configuration
     end
     

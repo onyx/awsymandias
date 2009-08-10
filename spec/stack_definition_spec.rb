@@ -108,6 +108,13 @@ module Awsymandias
         stackdef.defined_volumes[:c].should == { :size => 40, :snapshot_id => 'foo' }          
       end
     end
+
+    describe "load_balancer" do
+      it "should clean up the balancer name before adding it to unlaunched_load_balancers" do
+        stackdef = StackDefinition.new "rob_test"
+        stackdef.name == "rob-test"
+      end
+    end
     
   end
 end

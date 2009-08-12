@@ -23,6 +23,16 @@ unless defined?(Awsymandias)
       def access_key_id
         @access_key_id || AMAZON_ACCESS_KEY_ID || ENV['AMAZON_ACCESS_KEY_ID'] 
       end
+      
+      def my_stack_name
+        require "socket"
+        hostname = Socket.gethostname
+
+        Awsymandias.stack_names.detect do |stack_name|
+          s = Awsymandias::EC2::ApplicationStack.find(stack_name)
+          s ? s.instances.detect{ |instance| instance.private_dns_name =~ /#{hostname}/  } : false
+        end
+      end
     
       def secret_access_key
         @secret_access_key || AMAZON_SECRET_ACCESS_KEY || ENV['AMAZON_SECRET_ACCESS_KEY']

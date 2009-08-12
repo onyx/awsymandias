@@ -3,7 +3,7 @@ module Awsymandias
     attr_reader :name, :defined_instances, :defined_volumes, :defined_roles, :defined_load_balancers
     
     def initialize(name)
-      @name = name
+      @name = name.to_s
       @defined_instances = {}
       @defined_volumes = {}
       @defined_roles = {}
@@ -12,15 +12,15 @@ module Awsymandias
  
     def instance(name, config={})
       extract_roles(config).each { |r| role(r, name) }
-      @defined_instances[name] = config
+      @defined_instances[name.to_s] = config
     end
     
     def instances(*names)
       config = names.extract_options!
       roles = extract_roles(config)
       names.each do |name| 
-        roles.each { |r| role(r, name) }
-        instance(name, config) 
+        roles.each { |r| role(r, name.to_s) }
+        instance(name.to_s, config) 
       end
     end
     
@@ -31,11 +31,12 @@ module Awsymandias
     
     def role(name, *instance_names)
       @defined_roles[name] ||= []
-      @defined_roles[name] += instance_names
+      @defined_roles[name] += instance_names.map { |name| name.to_s }
     end
     
     def volume(name, configuration={})
-      @defined_volumes[name] = configuration
+      configuration[:instance] = configuration[:instance].to_s if configuration[:instance]
+      @defined_volumes[name.to_s] = configuration
     end
     
     def volumes(*names)

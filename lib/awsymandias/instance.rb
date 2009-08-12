@@ -122,6 +122,7 @@ module Awsymandias
         opts[:instance_type] = opts[:instance_type].name if opts[:instance_type].is_a?(Awsymandias::EC2::InstanceType)
       
         response = Awsymandias::RightAws.connection.run_instances *run_instance_opts_to_args(opts)
+        sleep 2 # There's a race condition where sometimes the instance is launched but the web service doesn't recognize it yet.
         find(response.first[:aws_instance_id])
       end
       

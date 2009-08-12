@@ -76,15 +76,15 @@ module Awsymandias
       it "should have a name" do
          ApplicationStack.new("foo").name.should == "foo"
        end
-     
+           
       describe "instances" do
         it "should be empty by default" do
            ApplicationStack.new("foo").unlaunched_instances.should be_empty
          end
-     
+           
          it "should be settable through the initializer" do
            stack = ApplicationStack.new("foo", :instances => { :app => {:some_key => :some_value} })
-           stack.unlaunched_instances[:app].should == {:some_key => :some_value}
+           stack.unlaunched_instances['app'].should == {:some_key => :some_value}
          end
          
          it "should create a method on the application stack to access the running instance" do
@@ -92,90 +92,90 @@ module Awsymandias
            stack.respond_to?(:app).should be_true           
          end
        end
-    
+          
       describe "instance" do
         it "should allow the definition of a basic, default instance" do
           stack = ApplicationStack.define("foo") do |s|
             s.instance :app
           end
-          stack.unlaunched_instances[:app].should == {}
+          stack.unlaunched_instances['app'].should == {}
         end
       
         it "should use the parameters given to the instance definition" do
-          stack = ApplicationStack.define("foo") do |s|
-            s.instance :app, :foo => "bar"
-          end
-          stack.unlaunched_instances[:app].should == { :foo => "bar" }
-        end
-          
-
-        it "should allow for the creation of multiple instances" do
-          stack = ApplicationStack.define("foo") do |s|
-            s.instance :app, :foo => "bar"
-            s.instance :db,  :foo => "baz"
-          end
-          stack.unlaunched_instances[:app].should == { :foo => "bar" }
-          stack.unlaunched_instances[:db].should ==  { :foo => "baz" }
-        end
+             stack = ApplicationStack.define("foo") do |s|
+               s.instance :app, :foo => "bar"
+             end
+             stack.unlaunched_instances['app'].should == { :foo => "bar" }
+           end
+             
+         
+           it "should allow for the creation of multiple instances" do
+             stack = ApplicationStack.define("foo") do |s|
+               s.instance :app, :foo => "bar"
+               s.instance :db,  :foo => "baz"
+             end
+             stack.unlaunched_instances['app'].should == { :foo => "bar" }
+             stack.unlaunched_instances['db'].should ==  { :foo => "baz" }
+           end
+         
+           it "should map multiple instances to the same set of parameters" do
+             stack = ApplicationStack.define("foo") do |s|
+               s.instances :app, :db, :foo => "bar"
+             end
+             stack.unlaunched_instances['app'].should == { :foo => "bar" }
+             stack.unlaunched_instances['db'].should  == { :foo => "bar" }
+           end
+         
+           it "should create an accessor mapped to the new instance, nil by default" do
+             stack = ApplicationStack.define("foo") do |s|
+               s.instance :app, :foo => "bar"
+             end
+             stack.app.should == nil
+           end
+             
+         end
       
-        it "should map multiple instances to the same set of parameters" do
-          stack = ApplicationStack.define("foo") do |s|
-            s.instances :app, :db, :foo => "bar"
-          end
-          stack.unlaunched_instances[:app].should == { :foo => "bar" }
-          stack.unlaunched_instances[:db].should  == { :foo => "bar" }
-        end
-      
-        it "should create an accessor mapped to the new instance, nil by default" do
-          stack = ApplicationStack.define("foo") do |s|
-            s.instance :app, :foo => "bar"
-          end
-          stack.app.should == nil
-        end
-    
-      end
-
       describe "volumes" do
         it "should be empty by default" do
           ApplicationStack.define("foo").volumes.should be_empty
         end
-
+      
         it "should be settable through the initializer" do
           stack = ApplicationStack.new("foo", :volumes => { :db => {} })
-          stack.volumes[:db].should == {}
+          stack.volumes['db'].should == {}
         end
-
+      
         it "should not allow invalid options" do
           lambda do
             stack = ApplicationStack.new("foo", :volumes => { :db => {:some_key => "123"} })
           end.should raise_error
         end
       end
-
+      
       describe "volume" do
         it "should use the parameters given to the volume definition" do
           stack = ApplicationStack.define("foo") do |s|
             s.volume :some_volume, :volume_id => "vol-123"
           end
-          stack.volumes[:some_volume].should == { :volume_id => "vol-123" }
+          stack.volumes['some_volume'].should == { :volume_id => "vol-123" }
         end
-
+      
         it "should allow multiple volumes" do
           stack = ApplicationStack.define("foo") do |s|
-            s.volume :volume_1, :volume_id => "vol-123"
+            s.volume "volume_1", :volume_id => "vol-123"
             s.volume :volume_2, :volume_id => "vol-456"
           end
-          stack.volumes[:volume_1].should == { :volume_id => "vol-123" }
-          stack.volumes[:volume_2].should == { :volume_id => "vol-456" }
+          stack.volumes["volume_1"].should == { :volume_id => "vol-123" }
+          stack.volumes["volume_2"].should == { :volume_id => "vol-456" }
         end
-
+      
         it "should allow volume_id, instance, and unix_device as options" do
           stack = ApplicationStack.define("foo") do |s|
             s.volumes :volume_1, :volume_id => "vol-123", :instance => "foo", :unix_device => "/dev/sdj"
           end
-          stack.volumes[:volume_1].should == { :volume_id => "vol-123", :instance => "foo", :unix_device => "/dev/sdj" }
+          stack.volumes["volume_1"].should == { :volume_id => "vol-123", :instance => "foo", :unix_device => "/dev/sdj" }
         end
-
+      
         it "should not allow invalid options" do
           lambda do
             stack = ApplicationStack.define("foo") do |s|
@@ -184,18 +184,18 @@ module Awsymandias
           end.should raise_error
         end
       end
-
-     
+      
+           
       describe "simpledb_domain" do
         it "should map to ApplicationStack::DEFAULT_SIMPLEDB_DOMAIN upon creation" do
           ApplicationStack.new("foo").simpledb_domain.should == ApplicationStack::DEFAULT_SIMPLEDB_DOMAIN
         end
-    
+          
         it "should be configurable" do
           ApplicationStack.new("foo", :simpledb_domain => "a domain").simpledb_domain.should == "a domain"
         end
       end
-    
+          
       describe 'define' do
         it "should store the stack name" do
           ApplicationStack.define('name').name.should == 'name'
@@ -205,7 +205,7 @@ module Awsymandias
           definition = ApplicationStack.define('name') do |s|
             s.instance :foo, :image_id => 'foo'
           end
-          definition.unlaunched_instances[:foo].should == { :image_id => 'foo' }
+          definition.unlaunched_instances["foo"].should == { :image_id => 'foo' }
         end
         
         it "should create a method for each role created" do
@@ -221,7 +221,7 @@ module Awsymandias
         end
         
       end
-    
+          
       describe "launch" do
         it "should launch its instances when launched" do
           s = ApplicationStack.define("test") do |s|
@@ -270,7 +270,7 @@ module Awsymandias
           s.db.should == instance_1
           s.app.should == instance_2
         end
-      
+              
         it "should remove the instance from unlaunched_instances after it has been launched" do
           s = ApplicationStack.define("test") do |s|
             s.instance :db,  :instance_type => InstanceTypes::C1_XLARGE
@@ -283,11 +283,11 @@ module Awsymandias
             with({ :instance_type => InstanceTypes::C1_XLARGE }).
             and_return(inst)
                   
-          s.unlaunched_instances[:db].should_not be_nil
+          s.unlaunched_instances["db"].should_not be_nil
           s.launch
-          s.unlaunched_instances[:db].should be_nil
+          s.unlaunched_instances["db"].should be_nil
         end
-      
+              
         it "should store details about the newly launched instances" do
           Instance.stub!(:launch).and_return stub_instance(:aws_instance_id => "abc123")
           stack = ApplicationStack.define("test") do |s|
@@ -296,35 +296,35 @@ module Awsymandias
           stack.should_receive(:store_app_stack_metadata!).at_least(:once)
           stack.launch
         end
-
+              
         it "should attach volumes when launched" do
           s = ApplicationStack.define("test") do |s|
             s.instance :db, :instance_type => InstanceTypes::M1_LARGE
             s.volume :production_data, :volume_id => "vol-123", :instance => :db, :unix_device => "/dev/sdj"
           end
-
+              
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
         
           instance = stub_instance
-
+              
           Instance.should_receive(:launch).and_return(instance)
           
           Awsymandias::RightAws.should_receive(:describe_volumes).with(["vol-123"]).and_return([volume = mock])           
           volume.should_receive(:attach_to_once_running).with(instance, "/dev/sdj")
-
+              
           s.launch
         end
-        
+                
         it "should create volumes from snapshots and attach them to each instance of the appropriate role" do
           s = ApplicationStack.define("test") do |s|
             s.instance :app1, :instance_type => InstanceTypes::M1_LARGE, :role => :app
             s.instance :app2, :instance_type => InstanceTypes::M1_LARGE, :role => :app
             s.instance :app3, :instance_type => InstanceTypes::M1_LARGE, :role => :app
             s.instance :no_attached_volume, :instance_type => InstanceTypes::M1_SMALL, :role => :other_role
-
+              
             s.volume :production_data, :snapshot_id => "snap-123", :role => :app, :unix_device => "/dev/sdj"
           end
-
+              
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
           s.should_receive(:sleep).any_number_of_times
           
@@ -355,7 +355,7 @@ module Awsymandias
             s.instance :db, :instance_type => InstanceTypes::M1_LARGE
             s.volume :volume_for_all, :snapshot_id => "snap-123", :all_instances => true, :unix_device => "/dev/sdj"
           end
-
+              
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
           s.should_receive(:sleep).any_number_of_times
           
@@ -369,7 +369,7 @@ module Awsymandias
             
           volume_1.should_receive(:attach_to_once_running).with(instances[0], "/dev/sdj")
           volume_2.should_receive(:attach_to_once_running).with(instances[1], "/dev/sdj")
-
+              
           s.launch
         end
         
@@ -392,7 +392,7 @@ module Awsymandias
           LoadBalancer.should_receive(:launch).with(lb_params).and_return(lb)
           s.launch
         end
-      
+              
         it "should remove the load balancer from unlaunched_load_balancers after it has been launched" do
           lb_params = {:availability_zones=>["us-east-1b"],
                        :instances=>[:db],
@@ -415,7 +415,7 @@ module Awsymandias
           s.launch
           s.unlaunched_load_balancers["lb"].should be_nil
         end
-      
+              
       end
       
       describe "launch_begun?" do    
@@ -432,19 +432,19 @@ module Awsymandias
           s.launch_begun?.should be_true
         end
       end
-  
+        
       describe "running?" do
         it "should be false initially" do
           ApplicationStack.define("test") { |s|  s.instance :db }.should_not be_running
         end
-  
+        
         it "should be false if launched but all instances are pending" do
           Instance.stub!(:launch).and_return stub_instance(:aws_state => { :name => "pending" })
           s = ApplicationStack.define("test") { |s|  s.instance :db }
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
           s.launch.should_not be_running
         end
-  
+        
         it "should be false if launched and some instances are pending" do
           s = ApplicationStack.define("test") do |s|
             s.instance :db, :instance_type => InstanceTypes::C1_XLARGE
@@ -463,7 +463,7 @@ module Awsymandias
           s.launch
           s.should_not be_running
         end
-  
+        
         it "should be true if launched and all instances are running" do
           s = ApplicationStack.define("test") do |s|
             s.instance :db, :instance_type => InstanceTypes::C1_XLARGE
@@ -483,7 +483,7 @@ module Awsymandias
           s.should be_running
         end
       end
-  
+        
       describe "port_open?" do
         it "should return true if there is one instance with the port open" do
           s = ApplicationStack.define("test") do |s|
@@ -498,7 +498,7 @@ module Awsymandias
           s.launch
           s.port_open?(100).should be_true
         end
-  
+        
         it "should return false if there is one instance with the port closed" do
           s = ApplicationStack.define("test") do |s| 
             s.instance "app", :instance_type => InstanceTypes::C1_XLARGE
@@ -544,9 +544,9 @@ module Awsymandias
           s.launch
           s.port_open?(100).should be_false
         end
-  
+        
       end
-  
+        
       describe "terminate!" do
         it "should not do anything if not running" do
           s = ApplicationStack.define("test") { |s|  s.instance "db" }
@@ -555,20 +555,57 @@ module Awsymandias
           RightAws.should_receive(:connection).never
           s.terminate!
         end
-  
-        it "should terminate all instances if running" do
+        
+        it "should terminate all instances, remove them from the collection, and add them to the terminated collection if running" do
           s = ApplicationStack.define("test") { |s|  s.instance "db" }
           s.should_receive(:remove_app_stack_metadata!).once.and_return(nil)
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
+          
+          mock_instance = mock("an_instance", :aws_instance_id => "i-foo", :running? => true, :attached_volumes => [])
+          mock_instance.should_receive(:name=).any_number_of_times
+          mock_instance.should_receive(:name).any_number_of_times.and_return("db")
+          mock_instance.should_receive(:terminate!)
+          
+          Instance.stub!(:launch).and_return(mock_instance)
+          s.launch
+          s.instance_variable_get("@instances").size.should == 1
+          s.instance_variable_get("@terminating_instances").size.should == 0
+          s.terminate!      
+          s.instance_variable_get("@instances").size.should == 0
+          s.instance_variable_get("@terminating_instances").size.should == 1
+        end
+              
+        it "should set the terminating flag" do
+          s = ApplicationStack.define("test") { |s|  s.instance "db" }
+          s.should_receive(:remove_app_stack_metadata!).once.and_return(nil)
+          s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
+          
           mock_instance = mock("an_instance", :aws_instance_id => "i-foo", :running? => true, :attached_volumes => [])
           mock_instance.should_receive(:name=).any_number_of_times
           mock_instance.should_receive(:name).any_number_of_times
           mock_instance.should_receive(:terminate!)
+          
           Instance.stub!(:launch).and_return(mock_instance)
+          s.launch
+          s.instance_variable_get("@terminating").should be_false
+          s.terminate!      
+          s.instance_variable_get("@terminating").should be_true
+        end
+              
+        it "should terminate all load_balancers if running" do
+          s = ApplicationStack.define("test") { |s| s.load_balancer 'test-lb' }
+          s.should_receive(:remove_app_stack_metadata!).once.and_return(nil)
+          s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
+        
+          mock_lb = mock("a-load-balancer", :launched? => true)
+          mock_lb.should_receive(:name).any_number_of_times
+          mock_lb.should_receive(:terminate!)
+          LoadBalancer.stub!(:launch).and_return(mock_lb)
+        
           s.launch
           s.terminate!      
         end
-  
+        
         it "should remove any stored instance name mappings" do
           s = ApplicationStack.define("test") { |s|  s.instance "db_1" }
           s.should_receive(:remove_app_stack_metadata!).once.and_return(nil)
@@ -582,13 +619,40 @@ module Awsymandias
           s.terminate!
         end
       end
-  
+      
+      describe "terminated?" do
+        it "should return true if there are no instances and all terminating instances say they're terminated" do
+          s = ApplicationStack.new(:some_name)
+          s.instance_variable_set "@instances", {}
+          
+          terminating_instance = mock( :terminated? => true)
+          s.instance_variable_set "@terminating_instances", {:foo => terminating_instance}
+          s.terminated?.should be_true
+        end
+        
+        it "should return false if there are any instances in the collection" do
+          s = ApplicationStack.new(:some_name)
+          s.instance_variable_set "@instances", {:foo => :bar}          
+          s.instance_variable_set "@terminating_instances", {}
+          s.terminated?.should be_false
+        end
+
+        it "should return false if there are any instances in the terminating collection that have not terminated" do
+          s = ApplicationStack.new(:some_name)
+          s.instance_variable_set "@instances", {}          
+          terminating_instance = mock( :terminated? => false)
+          s.instance_variable_set "@terminating_instances", {:foo => terminating_instance}
+          
+          s.terminated?.should be_false
+        end
+      end
+        
       describe "running_cost" do
         it "should be zero if the stack has not been launched" do
           s = ApplicationStack.define("test") { |s|  s.instance "db", :instance_type => InstanceTypes::M1_LARGE}
           s.running_cost.should == Money.new(0)
         end
-  
+        
         it "should be the sum total of the running cost of its constituent instances" do
           inst1, inst2 = [
             Instance.new(
@@ -621,15 +685,15 @@ module Awsymandias
             should raise_error(RuntimeError)
         end
       end
-    
+          
       describe "find" do
         it "should have more than just a pending test"
       end
-    
+          
       describe "reload_from_metadata!" do
         it "should have more than just a pending test"
       end
-    
+          
       describe "store_app_stack_metadata!" do
         it "should have more than just a pending test"
       end

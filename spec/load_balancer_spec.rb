@@ -20,20 +20,20 @@ module Awsymandias
       fail "Expected an exception to be raised with message '#{message}' but no exception was raised" unless @error_raised
     end
         
-    DEFAULT_LB_ATTRIBUTES = {:aws_created_at => "Tue Aug 04 11:14:27 UTC 2009",
-                            :availability_zones=>["us-east-1b"],
-                            :dns_name=>"RobTest-883635706.us-east-1.elb.amazonaws.com",
-                            :name=>"RobTest",
-                            :instances=>["i-5752453e"],
-                            :listeners=> [{:protocol=>"HTTP", :load_balancer_port=>80, :instance_port=>3080},
+    DEFAULT_LB_ATTRIBUTES = {:aws_created_at => nil,
+                            :availability_zones => ["us-east-1b"],
+                            :dns_name => nil,
+                            :name => "RobTest",
+                            :instances => ["i-5752453e"],
+                            :listeners => [{:protocol=>"HTTP", :load_balancer_port=>80, :instance_port=>3080},
                                           {:protocol=>"HTTP", :load_balancer_port=>8080, :instance_port=>3081}
-                                         ],
-                            :health_check=> { :healthy_threshold=>10,
-                                              :unhealthy_threshold=>3,
-                                              :interval=>31,
-                                              :target=>"TCP:3081",
-                                              :timeout=>6
-                                            }
+                                          ],
+                            :health_check => { :healthy_threshold=>10,
+                                               :unhealthy_threshold=>3,
+                                               :interval=>31,
+                                               :target=>"TCP:3081",
+                                               :timeout=>6
+                                             }
                            }
                            
     def populated_load_balancer(attribs = {})
@@ -79,11 +79,23 @@ module Awsymandias
           lb = populated_load_balancer :name => "invalid_name"
         end
       end
+      
+      it "should populate unregistered_instances and set instances to an empty array if the load balancer is not launched" do
+        lb = populated_load_balancer :dns_name => nil, :instances => [:an_instance]
+        lb.instance_variable_get("@instances").should == []
+        lb.instance_variable_get("@unregistered_instances").should == [:an_instance]
+      end
+      
+      it "should populate instances and set unregistered_instances to an empty array if the load balancer is launched" do
+        lb = populated_load_balancer :dns_name => :something, :instances => [:an_instance]
+        lb.instance_variable_get("@unregistered_instances").should == []
+        lb.instance_variable_get("@instances").should == [:an_instance]
+      end
     end
     
     describe "availability_zones=" do
       it "should remove availability_zones that are not in the passed list but are enabled in the load balancer" do
-        lb = populated_load_balancer :availability_zones => [:zone_1, :zone_2]
+        lb = populated_load_balancer :dns_name => :something, :availability_zones => [:zone_1, :zone_2]
         
         desired_zones = [:zone_2]
     
@@ -93,7 +105,7 @@ module Awsymandias
       end
       
       it "should add availability_zones that are in the passed list but not already in the load balancer" do
-        lb = populated_load_balancer :availability_zones => [:zone_1]
+        lb = populated_load_balancer :dns_name => :something, :availability_zones => [:zone_1]
         
         desired_zones = [:zone_1, :zone_2]
         
@@ -104,7 +116,7 @@ module Awsymandias
       end      
     
       it "should update the availability_zones attribute" do
-        lb = populated_load_balancer :availability_zones => [:zone_1]
+        lb = populated_load_balancer :dns_name => :something, :availability_zones => [:zone_1]
         
         desired_zones = [:zone_1, :zone_2]
         
@@ -163,7 +175,7 @@ module Awsymandias
     
     describe "instances=" do
       it "should deregister instances that are not in the passed list but are registered with the load balancer" do
-        lb = populated_load_balancer :instances => [:instance_1, :instance_2]
+        lb = populated_load_balancer :dns_name => :something, :instances => [:instance_1, :instance_2]
         
         desired_instances = [:instance_2]
         
@@ -173,7 +185,7 @@ module Awsymandias
       end
       
       it "should register instances that are in the passed list but are not registered with the load balancer" do
-        lb = populated_load_balancer :instances => [:instance_1]
+        lb = populated_load_balancer :dns_name => :something, :instances => [:instance_1]
         
         desired_instances = [:instance_1, :instance_2]
         
@@ -183,7 +195,7 @@ module Awsymandias
       end      
       
       it "should update the instances attribute" do
-        lb = populated_load_balancer :instances => [:instance_1]
+        lb = populated_load_balancer :dns_name => :something, :instances => [:instance_1]
         
         desired_instances = [:instance_1, :instance_2]
         
@@ -199,6 +211,7 @@ module Awsymandias
       it ", the class method, should instantiate a new load balancer and launch it" do
         listener_hash = {:protocol => 'HTTP', :load_balancer_port => 80, :instance_port => 8080}
         @elb_connection.should_receive(:create_lb).with(:lbname, [:some_availability_zones], [ listener_hash ])
+        @elb_connection.should_receive(:describe_lbs).and_return([{:instances => anything }])
         LoadBalancer.launch({:name => :lbname, 
                              :availability_zones => [:some_availability_zones], 
                              :listeners => [ listener_hash ]})
@@ -221,6 +234,8 @@ module Awsymandias
       it "should set the dns_name when launched" do
         lb = populated_load_balancer :dns_name => nil
         @elb_connection.should_receive(:create_lb).and_return(:a_dns_name)
+        @elb_connection.should_receive(:register_instances_with_lb)
+        @elb_connection.should_receive(:describe_lbs).and_return([{:instances => anything }])
         lb.launch
         lb.dns_name.should == :a_dns_name
       end
@@ -235,7 +250,7 @@ module Awsymandias
       
       it "should refresh itself from AWS data" do
         last_hour = Time.now - 1.hour
-        lb = populated_load_balancer :aws_created_at => last_hour.to_s
+        lb = populated_load_balancer :aws_created_at => last_hour.to_s, :dns_name => :something
         
         time_now = Time.now
         expected_attributes = DEFAULT_LB_ATTRIBUTES.merge({ :aws_created_at => time_now.to_s })

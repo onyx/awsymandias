@@ -9,6 +9,7 @@ module Awsymandias
         def find(name)
           returning(new(name)) do |stack|
             stack.send(:reload_from_metadata!)
+            return nil unless stack.launch_begun?
           end
         end
 
@@ -16,6 +17,12 @@ module Awsymandias
           returning(new(name, opts)) do |stack|
             stack.launch
           end
+        end
+
+        def define(name, &block)
+          definition = StackDefinition.new(name)
+          yield definition if block_given?
+          definition.build_stack
         end
       end
 
@@ -31,6 +38,7 @@ module Awsymandias
         @load_balancers = {}
         @unlaunched_load_balancers = {}
         @terminating = false
+        @terminating_instances = {}
         
         if opts[:roles]
           @roles = opts[:roles]
@@ -38,23 +46,21 @@ module Awsymandias
         end
         
         if opts[:instances]
-          @unlaunched_instances = opts[:instances]
+          @unlaunched_instances = opts[:instances].stringify_keys
           opts[:instances].each { |name, configuration| define_methods_for_instance(name) }
         end
       
-        opts[:volumes].each { |name, configuration| volume(name, configuration) } if opts[:volumes]
+        opts[:volumes].each { |name, configuration| volume(name.to_s, configuration) } if opts[:volumes]
         
         if opts[:load_balancers]
-          opts[:load_balancers].each_pair { |lb_name, config| @unlaunched_load_balancers[lb_name] = config }
+          opts[:load_balancers].each_pair { |lb_name, config| @unlaunched_load_balancers[lb_name.to_s] = config }
         end
       end
       
-      def self.define(name, &block)
-        definition = StackDefinition.new(name)
-        yield definition if block_given?
-        definition.build_stack
+      def has_instance_called?(inst_name)
+        !@instances[inst_name].nil?
       end
-
+      
       def instances
         !@instances.empty? ? @instances.values : {}
       end
@@ -86,12 +92,14 @@ module Awsymandias
         end
         store_app_stack_metadata!
         
+        sleep 2 # There may be a race condition where the instance has been launched but the web service doesn't know about it yet.
+        
         @unlaunched_load_balancers.each_pair do |lb_name, params|
           instance_names = params[:instances]
           
           if params[:instances]
             params[:instances].each do |instance_name|
-              raise "Load balancer #{lb_name} wants to use instance #{instance_name} but that instance is not launched." if @instances[instance_name.to_s].nil?
+              raise "Load balancer #{lb_name} wants to register instance #{instance_name} but that instance is not launched." if @instances[instance_name.to_s].nil?
             end
             params[:instances] = params.delete(:instances).map { |instance_name| @instances[instance_name.to_s].instance_id } 
           end
@@ -136,7 +144,7 @@ module Awsymandias
           Awsymandias::RightAws.wait_for_create_volume(options[:snapshot_id], i.aws_availability_zone)
         end
         
-        sleep 5 # There seems to be a race condition between when the volume says it is available and actually being able to attach it
+        sleep 2 # There seems to be a race condition between when the volume says it is available and actually being able to attach it
                 
         instances.zip(volumes).each do |i, volume|
           volume.attach_to_once_running i, options[:unix_device]
@@ -144,8 +152,9 @@ module Awsymandias
       end
       
       def reload
-        raise "Can't reload unless launched" unless (launch_complete? || terminating?)
+        raise "Can't reload unless launched" unless (launch_begun? || terminating?)
         @instances.values.each(&:reload)
+        @terminating_instances.values.each(&:reload)
         @load_balancers.values.each(&:reload)
         self
       end
@@ -155,7 +164,7 @@ module Awsymandias
         store_app_stack_metadata!
         instances.each do |instance|
           instance.terminate! if instance.running?
-          @instances.delete(instance.name)
+          @terminating_instances[instance.name] = @instances.delete(instance.name)
         end
         
         load_balancers.values.each do |load_balancer|
@@ -171,6 +180,10 @@ module Awsymandias
         @terminating
       end
 
+      def terminated?
+        @instances.empty? && @terminating_instances.values.all?(&:terminated?)
+      end
+
       def launch_begun?
         instances.any?
       end
@@ -181,10 +194,6 @@ module Awsymandias
 
       def running?
         launch_complete? && @instances.values.all?(&:running?)
-      end
-
-      def terminated?
-        launch_begun? && @instances.values.all?(&:terminated?)
       end
 
       def port_open?(port)

@@ -20,41 +20,52 @@ module Awsymandias
       
       @listeners = [attribs[:listeners]].flatten.map { |listener| Listener.new listener }
       @terminated = false
-      
-      [:availability_zones, :dns_name, :name, :instances].each do |attribute_name| 
+
+      [ :dns_name, :name ].each do |attribute_name| 
         instance_variable_set "@#{attribute_name.to_s}", attribs[attribute_name]
       end
       
-      self.health_check = attribs[:health_check]
+      @availability_zones = attribs[:availability_zones]
+      if launched?
+        @instances = attribs[:instances]
+        @unregistered_instances = []
+        @health_check = HealthCheck.new attribs[:health_check]
+      else
+        self.health_check = attribs[:health_check]
+        @instances = []
+        @unregistered_instances = attribs[:instances]        
+      end
     end
     
+    def initializing?; @initializing; end
+    
     def availability_zones=(zones = [])
+      @availability_zones ||= []
       zones = [zones].flatten
-      
+    
       zones_to_disable = @availability_zones - zones
-      Awsymandias::RightElb.connection.disable_availability_zones_for_lb @name, zones_to_disable if !zones_to_disable.empty?
-      
+      Awsymandias::RightElb.connection.disable_availability_zones_for_lb @name, zones_to_disable if launched? && !zones_to_disable.empty?
+    
       zones_to_enable = zones - @availability_zones
-      Awsymandias::RightElb.connection.enable_availability_zones_for_lb @name, zones_to_enable if !zones_to_enable.empty?
-      
+      Awsymandias::RightElb.connection.enable_availability_zones_for_lb @name, zones_to_enable if launched? && !zones_to_enable.empty?
+    
       @availability_zones = Awsymandias::RightElb.connection.describe_lbs([@name]).first[:availability_zones]
     end
 
     def health_check=(attribs)
-      need_to_save = !@health_check.nil?
       @health_check = HealthCheck.new(self, attribs || {})
-      @health_check.save if launched? && need_to_save
+      @health_check.save if launched?
     end
 
     def instances=(instance_ids = [])
       instance_ids = [instance_ids].flatten
-      
+    
       instances_to_deregister = @instances - instance_ids
-      Awsymandias::RightElb.connection.deregister_instances_from_lb @name, instances_to_deregister if !instances_to_deregister.empty?
-      
+      Awsymandias::RightElb.connection.deregister_instances_from_lb @name, instances_to_deregister if launched? && !instances_to_deregister.empty?
+    
       instances_to_register = instance_ids - @instances
-      Awsymandias::RightElb.connection.register_instances_with_lb @name, instances_to_register if !instances_to_register.empty?
-      
+      Awsymandias::RightElb.connection.register_instances_with_lb @name, instances_to_register if launched? && !instances_to_register.empty?
+    
       @instances = Awsymandias::RightElb.connection.describe_lbs([@name]).first[:instances]
     end
 
@@ -68,6 +79,10 @@ module Awsymandias
       
       listener_params = @listeners.map { |l| l.attributes }      
       @dns_name = Awsymandias::RightElb.connection.create_lb @name, @availability_zones, listener_params
+      sleep 2 # Give AWS a few seconds to learn about the new LB
+      self.instances = @unregistered_instances
+      @unregistered_instances = nil
+      @dns_name
     end
 
     def launched?

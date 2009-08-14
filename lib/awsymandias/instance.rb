@@ -15,7 +15,7 @@ module Awsymandias
 
     def summarize
       output = []
-      output << "   Instance '#{name}'\t#{instance_id}\t#{public_dns}\tLaunched #{aws_launch_time}"
+      output << "   Instance #{"'#{name}'".ljust(15,' ')}\t#{instance_id}\t#{public_dns}\tLaunched #{aws_launch_time}"
       output << "      #{aws_state}\t#{aws_availability_zone}\t#{aws_instance_type.name}\t#{aws_image_id}"
       attached_volumes.each do |volume|
         output << "      #{volume.aws_id} -> #{volume.aws_device}"

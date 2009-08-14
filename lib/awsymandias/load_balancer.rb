@@ -29,7 +29,7 @@ module Awsymandias
       if launched?
         @instances = attribs[:instances]
         @unregistered_instances = []
-        @health_check = HealthCheck.new attribs[:health_check]
+        @health_check = HealthCheck.new self,  attribs[:health_check]
       else
         self.health_check = attribs[:health_check]
         @instances = []
@@ -101,11 +101,13 @@ module Awsymandias
     
     def summarize
       output = []
-      output << "   Load Balancer '#{name}':\t#{dns_name || "Not Launched"}"
+      output << "   Load Balancer '#{name}': \t#{dns_name || "Not Launched"}"
       output << "      Health Check:  "
       health_check.attributes.each_pair {|attrib, value| output.last << "#{attrib}: #{value}\t"}
-      output << "      Avail. Zones: #{availability_zones.join "," }"
-      output << "      Instances: #{instances.join "," }"
+      output << "      Avail. Zones: #{availability_zones.join ", " }"
+      output << "      Instances:  "
+      instance_health.each_pair { |instance_id, health| output.last << "#{instance_id} (#{health[:state]}), " }
+      output.last.chop!.chop!
       output << "      Listeners:"
       listeners.each do |listener|
         output << "                 "
@@ -140,9 +142,9 @@ module Awsymandias
                           
       def initialize(lb, attribs = {})
         @lb = lb
-        attribs.merge!(HealthCheck::DEFAULT_SETTINGS)
+        attribs = HealthCheck::DEFAULT_SETTINGS.merge attribs
         
-        HealthCheck::DEFAULT_SETTINGS.each_pair { |key, value| instance_variable_set "@#{key}", value }
+        HealthCheck::DEFAULT_SETTINGS.each_pair { |key, value| instance_variable_set "@#{key}", attribs[key] }
       end
       
       def attributes
@@ -152,7 +154,7 @@ module Awsymandias
       end
       
       def save
-        Awsymandias::RightElb.connection.configure_health_check attributes
+        Awsymandias::RightElb.connection.configure_health_check @lb.name, attributes
       end
     end
     

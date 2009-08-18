@@ -8,7 +8,7 @@ describe 'a launched instance' do
     Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
     Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
     
-    if ENV['TEST_STACK_ALREADY_LAUNCHED']
+    if ENV['TEST_STACK_MANUALLY_LAUNCHED']
       @stack = Awsymandias::EC2::ApplicationStack.find('instances')
       @stack_lb = @stack.load_balancers['instances-balancer']
       @stack_lb_reset_info = { :instances => @stack_lb.instances,
@@ -47,7 +47,7 @@ describe 'a launched instance' do
   
   
   after :all do
-    if ENV['TEST_STACK_ALREADY_LAUNCHED']
+    if ENV['TEST_STACK_MANUALLY_LAUNCHED']
       @stack_lb.instances = @stack_lb_reset_info[:instances]
       @stack_lb.availability_zones = @stack_lb_reset_info[:availability_zones]
       @stack_lb.health_check = @stack_lb_reset_info[:health_check]

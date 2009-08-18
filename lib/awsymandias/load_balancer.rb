@@ -43,11 +43,11 @@ module Awsymandias
       @availability_zones ||= []
       zones = [zones].flatten
     
-      zones_to_disable = @availability_zones - zones
-      Awsymandias::RightElb.connection.disable_availability_zones_for_lb @name, zones_to_disable if launched? && !zones_to_disable.empty?
-    
       zones_to_enable = zones - @availability_zones
       Awsymandias::RightElb.connection.enable_availability_zones_for_lb @name, zones_to_enable if launched? && !zones_to_enable.empty?
+    
+      zones_to_disable = @availability_zones - zones
+      Awsymandias::RightElb.connection.disable_availability_zones_for_lb @name, zones_to_disable if launched? && !zones_to_disable.empty?
     
       @availability_zones = Awsymandias::RightElb.connection.describe_lbs([@name]).first[:availability_zones]
     end

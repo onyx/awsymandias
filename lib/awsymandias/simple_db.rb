@@ -7,16 +7,23 @@ module Awsymandias
                                                    { :logger => Logger.new("/dev/null") }.merge(opts)
       end
 
-      def put(domain, name, stuff, replace = true)
-        stuff.each_pair { |key, value| stuff[key] = value.to_yaml.gsub("\n","\\n") }
-        connection.put_attributes handle_domain(domain), name, stuff, replace
+      def put(domain, name, stuff, options = {})
+        options[:replace] ||= true
+        options[:marshall] ||= true
+        if options[:marshall]
+          stuff.each_pair { |key, value| stuff[key] = value.to_yaml.gsub("\n","\\n") }
+        end
+        connection.put_attributes handle_domain(domain), name, stuff, options[:replace]
       end
 
-      def get(domain, name)
+      def get(domain, name, options = {})
+        options[:marshall] ||= true
         stuff = connection.get_attributes(handle_domain(domain), name)[:attributes] || {}
-        stuff.inject({}) do |hash, (key, value)|
-          hash[key.to_sym] = YAML.load(value.first.gsub("\\n","\n"))
-          hash
+        if options[:marshall]
+          stuff.inject({}) do |hash, (key, value)|
+            hash[key.to_sym] = YAML.load(value.first.gsub("\\n","\n"))
+            hash
+          end
         end
       end
 

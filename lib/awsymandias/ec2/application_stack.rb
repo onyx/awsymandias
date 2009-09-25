@@ -1,6 +1,8 @@
 module Awsymandias
   module EC2
     class ApplicationStack
+      include Awsymandias::Taggable
+      include Awsymandias::Notable
       attr_reader :name, :simpledb_domain, :unlaunched_instances, :instances, :volumes, :roles, :unlaunched_load_balancers, :load_balancers
 
       DEFAULT_SIMPLEDB_DOMAIN = "application-stack"
@@ -173,6 +175,7 @@ module Awsymandias
         end
         
         remove_app_stack_metadata!
+        destroy
         self
       end
 

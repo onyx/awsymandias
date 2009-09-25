@@ -240,6 +240,7 @@ module Awsymandias
 
           instance = Awsymandias::Instance.find("a result id")
           instance.should be_running
+          instance.should_receive(:destroy)
           instance.terminate!
           instance.should_not be_running
           instance.should be_terminated

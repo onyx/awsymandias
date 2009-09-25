@@ -3,6 +3,8 @@
 # It inherits from ARes::B in order to provide simple XML <-> domain model mapping.
 module Awsymandias
   class Instance < ActiveResource::Base  
+    include Awsymandias::Taggable
+    include Awsymandias::Notable
     attr_accessor :name
       
     self.site = "mu"
@@ -27,6 +29,8 @@ module Awsymandias
       Awsymandias::RightAws.describe_volumes.select { |volume| volume.aws_instance_id == instance_id }
     end
 
+    def destroy; end
+
     def key_name
       @attributes['key_name'] || nil
     end
@@ -46,6 +50,10 @@ module Awsymandias
       false
     end
     
+    def reload
+      load( RightAws.connection.describe_instances(self.aws_instance_id).first )
+    end
+    
     def snapshot_attached?(snapshot_id)
       Awsymandias::RightAws.describe_volumes.each do |volume|
         return true if volume.snapshot_id == snapshot_id && volume.aws_instance_id == instance_id
@@ -59,6 +67,7 @@ module Awsymandias
   
     def terminate!
       Awsymandias::RightAws.connection.terminate_instances self.instance_id
+      destroy
       reload
     end
   
@@ -66,10 +75,6 @@ module Awsymandias
       attached_volumes.select { |vol| vol.aws_device == unix_device }.first
     end
 
-    def reload
-      load( RightAws.connection.describe_instances(self.aws_instance_id).first )
-    end
-    
     def to_params
       {
         :aws_image_id => self.aws_image_id,

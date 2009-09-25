@@ -10,6 +10,7 @@ unless defined?(Awsymandias)
   require 'net/telnet'
 
   Dir[File.dirname(__FILE__) + "/awsymandias/extensions/**/*.rb"].each { |file| require file }
+  Dir[File.dirname(__FILE__) + "/awsymandias/lib/**/*.rb"].each { |file| require file }
   Dir[File.dirname(__FILE__) + "/awsymandias/**/*.rb"].each { |file| require file }
 
   module Awsymandias

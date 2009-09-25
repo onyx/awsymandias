@@ -59,12 +59,12 @@ module Awsymandias
 
       def stub_load_balancer(stubs={})
         lb_defaults = {:aws_created_at => "Tue Aug 04 11:14:27 UTC 2009",
-                                :availability_zones=>["us-east-1b"],
-                                :dns_name=>nil,
-                                :name=>"RobTest",
-                                :instances=>["i-5752453e"],
-                                :listeners=> [{:protocol=>"HTTP", :load_balancer_port=>80, :instance_port=>3080}],
-                               }
+                              :availability_zones=>["us-east-1b"],
+                              :dns_name=>nil,
+                              :name=>"RobTest",
+                              :instances=>["i-5752453e"],
+                              :listeners=> [{:protocol=>"HTTP", :load_balancer_port=>80, :instance_port=>3080}],
+                             }
         LoadBalancer.new(lb_defaults.merge(stubs))
       end
 
@@ -551,6 +551,7 @@ module Awsymandias
         it "should not do anything if not running" do
           s = ApplicationStack.define("test") { |s|  s.instance "db" }
           s.should_receive(:remove_app_stack_metadata!).once.and_return(nil)
+          s.should_receive(:destroy).once.and_return(nil)
           s.should_receive(:store_app_stack_metadata!).any_number_of_times.and_return(nil)
           RightAws.should_receive(:connection).never
           s.terminate!

@@ -1,5 +1,7 @@
 module Awsymandias
-  class LoadBalancer < ActiveResource::Base      
+  class LoadBalancer
+    include Awsymandias::Taggable
+    include Awsymandias::Notable
     attr_reader :name, :aws_created_at, :availability_zones, :dns_name, :name, :instances, :listeners, :health_check
 
     def self.find(*names)
@@ -36,6 +38,8 @@ module Awsymandias
         @unregistered_instances = attribs[:instances]        
       end
     end
+    
+    def id; name; end
     
     def initializing?; @initializing; end
     
@@ -117,7 +121,9 @@ module Awsymandias
     end
     
     def terminate!
+      return unless launched?
       Awsymandias::RightElb.connection.delete_lb name
+      destroy
       @terminated = true
     end
     

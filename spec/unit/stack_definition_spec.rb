@@ -116,5 +116,12 @@ module Awsymandias
       end
     end
     
+    describe "terminate!" do
+      it "should delete the snapshot and call destroy" do
+        stack_def = StackDefinition.new 'test'
+        stack_def.should_receive(:destroy)
+        stack_def.terminate!
+      end
+    end
   end
 end

@@ -8,9 +8,9 @@ module Awsymandias
          end.map { |object_key| object_key.gsub(/.*__/,'')}
       end
       
-      def find_instances_by_tag(tag)
+      def find_by_tag(tag)
         ids = instances_tagged_with(tag)
-        respond_to?(:find) ? find(ids) : ids
+        respond_to?(:find) && ids ? find(ids) : ids
       end
     end
     

@@ -5,25 +5,23 @@ require File.expand_path(File.dirname(__FILE__) + "/../../lib/awsymandias")
 describe 'a launched instance' do
   
   before :all do
-    if ENV['AMAZON_ACCESS_KEY_ID']  && ENV['AMAZON_SECRET_ACCESS_KEY'] 
-      Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
-      Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
-    else
-      raise "No Awsymandias keys available.  Please set ENV['AMAZON_ACCESS_KEY_ID'] and ENV['AMAZON_SECRET_ACCESS_KEY']"
-    end
+    raise "No Awsymandias keys available.  Please set ENV['AMAZON_ACCESS_KEY_ID'] and ENV['AMAZON_SECRET_ACCESS_KEY']" unless ENV['AMAZON_ACCESS_KEY_ID'] && ENV['AMAZON_SECRET_ACCESS_KEY'] 
+    Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
+    Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
     
     if ENV['TEST_STACK_MANUALLY_LAUNCHED']
       @stack = Awsymandias::EC2::ApplicationStack.find('instances')
-      @stack_lb = @stack.load_balancers['instances-balancer']
+      @stack_lb = @stack.load_balancers['integration-test-balancer']
       @stack_lb_reset_info = { :instances => @stack_lb.instances,
                                :availability_zones => @stack_lb.availability_zones,
                                :health_check => @stack_lb.health_check.attributes
                              }
     else
+      raise "Load Balancer should not be launched yet!" unless Awsymandias::RightElb.describe_lbs == []
       @stack = Awsymandias::EC2::ApplicationStack.define('instances') do |s|
         s.instance :box,  :image_id => 'ami-20b65349'
         s.instance :box2, :image_id => 'ami-20b65349'
-        s.load_balancer "instances-balancer", 
+        s.load_balancer "integration-test-balancer", 
                         :instances => [ :box ], 
                         :availability_zones => [ Awsymandias::EC2::AvailabilityZones::US_EAST_1B.gsub('_','-') ], 
                         :health_check => { :healthy_threshold   => 2, 
@@ -82,12 +80,12 @@ describe 'a launched instance' do
     found_stack.box.should_not be_nil
     found_stack.box.running?.should be_true
     
-    found_stack.load_balancers['instances-balancer'].should_not be_nil
-    found_stack.load_balancers['instances-balancer'].launched?.should be_true
+    found_stack.load_balancers['integration-test-balancer'].should_not be_nil
+    found_stack.load_balancers['integration-test-balancer'].launched?.should be_true
   end
     
   it "load_balancers:  should be available through the load_balancers collection" do
-    @stack.load_balancers['instances-balancer'].should_not be_nil
+    @stack.load_balancers['integration-test-balancer'].should_not be_nil
   end
   
   it "load_balancers:  should set up the load balancer with the specified health check paramaters" do
@@ -98,12 +96,12 @@ describe 'a launched instance' do
                               :target => "TCP:22",
                             }
                             
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.health_check.attributes.should == expected_health_check
   end
     
   it "load_balancers:  should update the health check when an assignment happens" do
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     expected_health_check = { :healthy_threshold   => 3, 
                               :unhealthy_threshold => 4,
                               :timeout => 5,
@@ -114,20 +112,20 @@ describe 'a launched instance' do
     found_lb.health_check.attributes.should_not == expected_health_check    
     found_lb.health_check = expected_health_check
 
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.health_check.attributes.should == expected_health_check    
   end  
     
   it "load_balancers:  should add/remove instances when an assignment happens" do
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.instances.should == [ @stack.box.instance_id ] 
 
     found_lb.instances = [ @stack.box.instance_id, @stack.box2.instance_id ]
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.instances == [ @stack.box.instance_id, @stack.box2.instance_id ]
 
     found_lb.instances = [ @stack.box2.instance_id ]
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.instances == [ @stack.box2.instance_id ]
   end  
     
@@ -135,15 +133,15 @@ describe 'a launched instance' do
     availability_zone_a = Awsymandias::EC2::AvailabilityZones::US_EAST_1A.gsub('_','-')
     availability_zone_b = Awsymandias::EC2::AvailabilityZones::US_EAST_1B.gsub('_','-')
 
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.availability_zones.should == [ availability_zone_b ]
 
     found_lb.availability_zones = [ availability_zone_a, availability_zone_b ]
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.availability_zones == [ availability_zone_a, availability_zone_b ]
 
     found_lb.availability_zones = [ availability_zone_a ]
-    found_lb = Awsymandias::LoadBalancer.find("instances-balancer").first
+    found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.availability_zones == [ availability_zone_a ]
   end  
     

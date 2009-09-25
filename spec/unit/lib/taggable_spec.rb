@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'spec'
-require File.expand_path(File.dirname(__FILE__) + "/../../lib/awsymandias")
+require File.expand_path(File.dirname(__FILE__) + "/../../../lib/awsymandias")
 
 module Awsymandias
   describe Taggable do
@@ -11,6 +11,31 @@ module Awsymandias
       def id; @name; end
     end
     
+    describe "find_by_tag" do
+      it "should call find with the ids from find_instances_by_tag if the class has a find method" do
+        class DummyClassWithFind
+          include Awsymandias::Taggable
+          def initialize(name = 'dummy-1'); @name = name; end
+          def id; @name; end
+          def self.find(ids); end;
+        end
+        DummyClassWithFind.should_receive(:instances_tagged_with).with('some_tag').and_return(['some_id'])
+        DummyClassWithFind.should_receive(:find).with(['some_id']).and_return( [ mock(:id => 'some_id') ] )
+        DummyClassWithFind.find_by_tag('some_tag').map(&:id).should == [ 'some_id' ]
+      end
+
+      it "should return an array of ids from find_instances_by_tag if the class does not have a find method" do
+        DummyClass.should_receive(:instances_tagged_with).with('some_tag').and_return(['some_id'])
+        DummyClass.find_by_tag('some_tag').should == ['some_id']
+      end
+
+      it "should not call find if find_instances_by_tag returns no ids" do
+        DummyClass.should_receive(:instances_tagged_with).with('some_tag').and_return(nil)
+        DummyClass.should_receive(:find).never
+        DummyClass.find_by_tag('some_tag').should be_nil
+      end
+    end
+
     context "instances_tagged_with" do
       it "should return an array of instance identifiers tagged with the specified tag" do
         Taggable::Tags.should_receive(:instance_identifiers_tagged_with).with(:a_tag).and_return(['DummyClass__dummy1','DummyClass__dummy2'])

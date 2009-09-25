@@ -261,5 +261,22 @@ module Awsymandias
         lb.aws_created_at.to_s.should == time_now.to_s
       end
     end
+
+    describe "terminate!" do
+      it "should do nothing if the load balancer is not launched" do
+        lb = populated_load_balancer
+        lb.should_receive(:destroy).never
+        lb.terminate!
+      end
+      
+      it "should call destroy and set the terminated instance variable" do
+        lb = populated_load_balancer :dns_name => 'lb_launched'
+        @elb_connection.should_receive(:delete_lb).and_return(:lb_launched)
+        lb.should_receive(:destroy)
+        lb.terminated?.should be_false
+        lb.terminate!        
+        lb.terminated?.should be_true
+      end
+    end
   end
 end

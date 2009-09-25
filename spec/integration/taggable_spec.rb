@@ -23,12 +23,9 @@ module Awsymandias
     end
   
     before :all do
-      if ENV['AMAZON_ACCESS_KEY_ID']  && ENV['AMAZON_SECRET_ACCESS_KEY'] 
-        Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
-        Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
-      else
-        raise "No Awsymandias keys available.  Please set ENV['AMAZON_ACCESS_KEY_ID'] and ENV['AMAZON_SECRET_ACCESS_KEY']"
-      end
+      raise "No Awsymandias keys available.  Please set ENV['AMAZON_ACCESS_KEY_ID'] and ENV['AMAZON_SECRET_ACCESS_KEY']" unless ENV['AMAZON_ACCESS_KEY_ID'] && ENV['AMAZON_SECRET_ACCESS_KEY'] 
+      Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
+      Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
     end 
     
     before :each do
@@ -93,7 +90,7 @@ module Awsymandias
       dummy2.aws_tags = [ 'integration_test_tag' ]
       dummy2.aws_tags.save
      
-      tagged_objects = DummyClass.find_instances_by_tag('integration_test_tag')
+      tagged_objects = DummyClass.find_by_tag('integration_test_tag')
       tagged_objects.include?('dummy1').should be_true
       tagged_objects.include?('dummy2').should be_true
       tagged_objects.size.should == 2

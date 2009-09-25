@@ -1,5 +1,7 @@
 module Awsymandias
   class StackDefinition
+    include Awsymandias::Taggable
+    include Awsymandias::Notable
     attr_reader :name, :defined_instances, :defined_volumes, :defined_roles, :defined_load_balancers
     
     def initialize(name)
@@ -9,6 +11,17 @@ module Awsymandias
       @defined_roles = {}
       @defined_load_balancers = {}
     end
+    
+    def build_stack
+      Awsymandias::EC2::ApplicationStack.new(name, 
+        :instances => defined_instances,
+        :volumes => defined_volumes,
+        :roles => defined_roles,
+        :load_balancers => defined_load_balancers
+      )
+    end
+    
+    def id; name; end
  
     def instance(name, config={})
       extract_roles(config).each { |r| role(r, name) }
@@ -34,6 +47,8 @@ module Awsymandias
       @defined_roles[name] += instance_names.map { |name| name.to_s }
     end
     
+    def terminate!; destroy; end
+    
     def volume(name, configuration={})
       configuration[:instance] = configuration[:instance].to_s if configuration[:instance]
       @defined_volumes[name.to_s] = configuration
@@ -44,15 +59,6 @@ module Awsymandias
       names.each { |name| volume(name, configuration) }
     end
    
-    def build_stack
-      Awsymandias::EC2::ApplicationStack.new(name, 
-        :instances => defined_instances,
-        :volumes => defined_volumes,
-        :roles => defined_roles,
-        :load_balancers => defined_load_balancers
-      )
-    end
-    
     private
     def extract_roles(config)
       [config.delete(:roles), config.delete(:role)].flatten.compact

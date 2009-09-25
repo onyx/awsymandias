@@ -1,10 +1,14 @@
 module Awsymandias
-  class Volume < ActiveResource::Base
+  class Volume
+    include Awsymandias::Taggable
+    include Awsymandias::Notable
     hash_initializer :aws_size, :aws_device, :aws_attachment_status, :zone, :snapshot_id, :aws_attached_at, :aws_status, :aws_id, :aws_created_at, :aws_instance_id, :stack
     attr_reader :aws_size, :aws_device, :aws_attachment_status, :zone, :snapshot_id, :aws_attached_at, :aws_status, :aws_id, :aws_created_at, :aws_instance_id
     
-    self.site = "mu"
-    
+    def self.find(*ids)
+      Awsymandias::RightAws.connection.describe_volumes(ids).map { |v| Awsymandias::Volume.new v }
+    end
+        
     def id;        aws_id; end
     def volume_id; aws_id; end
 
@@ -60,6 +64,12 @@ module Awsymandias
         instance_variable_set "@#{attribute_name}", data[attribute_name]
       end
       self
+    end
+    
+    def terminate!
+      return if attached?
+      destroy
+      Awsymandias::RightAws.delete_volume id
     end
     
     def to_simpledb

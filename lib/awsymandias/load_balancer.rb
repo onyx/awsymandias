@@ -85,6 +85,7 @@ module Awsymandias
       @dns_name = Awsymandias::RightElb.connection.create_lb @name, @availability_zones, listener_params
       sleep 2 # Give AWS a few seconds to learn about the new LB
       self.instances = @unregistered_instances
+      self.health_check.save
       @unregistered_instances = nil
       @dns_name
     end

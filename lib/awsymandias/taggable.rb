@@ -2,50 +2,22 @@ module Awsymandias
   module Taggable
     
     module ClassMethods
-      attr_reader :metadata_options
-
-      def taggable_options(options = {})
-        @metadata_options.merge!(options)
-      end
-
       def instances_tagged_with(tag)
          Tags.instance_identifiers_tagged_with(tag).select do |object_key| 
            object_key =~ /#{@metadata_options[:prefix]}__/ 
          end.map { |object_key| object_key.gsub(/.*__/,'')}
       end
-    end
-    
-    module ClassMethodsWithFind
-        def find_instances_by_tag(tag)
-          find instances_tagged_with(tag)
-        end
-    end
-    
-    def self.included(klass)
-      klass.extend ClassMethods      
-      klass.extend ClassMethodsWithFind if klass.respond_to?(:find)
-
-      if klass.instance_methods.include?('destroy')
-        klass.class_eval <<-END
-          def destroy_with_tags
-            destroy_tags
-            destroy_without_tags
-          end
-        
-          alias_method_chain :destroy, :tags
-          END
-        else
-          klass.class_eval "def destroy; destroy_tags; end"
-        end
       
-      klass.instance_eval do
-        @metadata_options = {:identifier => :id, :prefix => klass.name.split("::").last } 
+      def find_instances_by_tag(tag)
+        ids = instances_tagged_with(tag)
+        respond_to?(:find) ? find(ids) : ids
       end
     end
     
-    def destroy_tags
-      self.aws_tags = []
-      aws_tags.save
+    def self.included(klass)
+      klass.instance_eval { @metadata_options = {:identifier => :id, :prefix => klass.name.split("::").last } }
+      klass.extend ClassMethods      
+      klass.send :include, Awsymandias::MetadataBase
     end
     
     def aws_tags

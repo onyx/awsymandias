@@ -1,4 +1,48 @@
 module Awsymandias  
+  
+  module MetadataBase    
+    module ClassMethods
+      attr_reader :metadata_options
+
+      def metadata_options(options = {})
+        @metadata_options.merge!(options)
+      end
+    end
+    
+    def self.included(klass)
+      klass.extend ClassMethods      
+      klass.instance_eval do
+      
+        def method_added(method_name)
+          if !@in_method_added_block && method_name == :destroy
+            @in_method_added_block = true
+            alias_method_chain :destroy, :metadata
+            @in_method_added_block = false
+          end
+        end
+
+        unless klass.instance_methods.include?('destroy')
+            klass.class_eval "def destroy; nil; end"
+        end
+
+      end
+    end
+
+    def destroy_with_metadata
+      destroy_metadata
+      destroy_without_metadata
+    end
+    
+    def destroy_metadata
+      [:aws_tags, :aws_notes].each do |attrib|
+        if instance_variables.include? "@#{attrib}"
+          self.send("#{attrib}=", [])
+          self.send("#{attrib}").save
+        end
+      end
+    end
+  end
+  
   class MetadataCollection
     include Enumerable
     attr_accessor :extended_object

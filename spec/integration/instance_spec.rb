@@ -5,8 +5,12 @@ require File.expand_path(File.dirname(__FILE__) + "/../../lib/awsymandias")
 describe 'a launched instance' do
   
   before :all do
-    Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
-    Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
+    if ENV['AMAZON_ACCESS_KEY_ID']  && ENV['AMAZON_SECRET_ACCESS_KEY'] 
+      Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
+      Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
+    else
+      raise "No Awsymandias keys available.  Please set ENV['AMAZON_ACCESS_KEY_ID'] and ENV['AMAZON_SECRET_ACCESS_KEY']"
+    end
     
     if ENV['TEST_STACK_MANUALLY_LAUNCHED']
       @stack = Awsymandias::EC2::ApplicationStack.find('instances')

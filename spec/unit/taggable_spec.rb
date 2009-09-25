@@ -161,5 +161,36 @@ module Awsymandias
         Taggable::Tags.put_metadata DummyClass.new, ['a']
       end
     end
+    
+    context "destroy" do
+      it "should be defined and call destroy_metadata if the class being extended by Taggable does not already have a destroy method" do
+        class DummyClassWithoutDestroy
+          include Awsymandias::Taggable
+          def initialize(name = 'dummy-1'); @name = name; end
+          def id; @name; end
+        end
+
+        obj = DummyClassWithoutDestroy.new
+        obj.respond_to?(:destroy).should == true
+        obj.should_receive(:destroy_metadata)
+        obj.destroy
+      end
+
+      it "should be defined and call destroy_metadata and then the native destroy if the class being extended by Taggable has a destroy method" do
+        class DummyClassWithDestroy
+          include Awsymandias::Taggable
+          def initialize(name = 'dummy-1'); @name = name; end
+          def destroy;  true;  end
+          def id; @name; end
+
+          def self.find(ids); ids ;end
+        end
+
+        obj = DummyClassWithDestroy.new
+        obj.should_receive(:destroy_metadata)
+        obj.destroy
+      end
+    end    
+    
   end
 end

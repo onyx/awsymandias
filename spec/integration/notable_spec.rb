@@ -6,7 +6,7 @@ module Awsymandias
   describe Notable do 
     class DummyClass
       include Awsymandias::Notable
-      notable_options :prefix => "IntegrationTestDummyClass"
+      metadata_options :prefix => "IntegrationTestDummyClass"
       def initialize(name = 'dummy1'); @name = name; end
       def id; @name; end
     end
@@ -20,8 +20,12 @@ module Awsymandias
     end
   
     before :all do
-      Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
-      Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
+      if ENV['AMAZON_ACCESS_KEY_ID']  && ENV['AMAZON_SECRET_ACCESS_KEY'] 
+        Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
+        Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
+      else
+        raise "No Awsymandias keys available.  Please set ENV['AMAZON_ACCESS_KEY_ID'] and ENV['AMAZON_SECRET_ACCESS_KEY']"
+      end
     end 
     
     before :each do
@@ -60,6 +64,25 @@ module Awsymandias
       dummy.destroy
       sleep 1
       Awsymandias::SimpleDB.get('awsymandias-notes','IntegrationTestDummyClass__dummy1').should == {}
+    end
+
+    it "should delete notes when an object is destroyed and the object has its own destroy method" do 
+      class DummyClassWithDestroy     
+        include Awsymandias::Notable
+        metadata_options :prefix => "IntegrationTestDummyClass"
+  
+        def self.find(ids = []); ids; end
+        def initialize(name = 'dummy1'); @name = name; end
+        def destroy; end
+        def id; @name; end
+      end
+      
+      dummy = DummyClassWithDestroy.new
+      dummy.aws_notes = [ 'integration_test_note' ]
+      dummy.aws_notes.save
+      dummy.destroy
+      sleep 1
+      Awsymandias::SimpleDB.get('awsymandias-notes','IntegrationTestDummyClassWithDestroy__dummy1').should == {}
     end
   end
 end

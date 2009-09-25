@@ -4,9 +4,11 @@ require File.expand_path(File.dirname(__FILE__) + "/../../lib/awsymandias")
 
 module Awsymandias
   describe Taggable do 
-    class DummyClass
+    class DummyClass      
       include Awsymandias::Taggable
-      taggable_options :prefix => "IntegrationTestDummyClass"
+      metadata_options :prefix => "IntegrationTestDummyClass"
+     
+      def self.find(ids = []); ids; end
       def initialize(name = 'dummy1'); @name = name; end
       def id; @name; end
     end
@@ -17,11 +19,16 @@ module Awsymandias
       end.each do |key|
         Awsymandias::SimpleDB.delete 'awsymandias-tags', key
       end
+      sleep 1
     end
   
     before :all do
-      Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
-      Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
+      if ENV['AMAZON_ACCESS_KEY_ID']  && ENV['AMAZON_SECRET_ACCESS_KEY'] 
+        Awsymandias.access_key_id = ENV['AMAZON_ACCESS_KEY_ID'] 
+        Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
+      else
+        raise "No Awsymandias keys available.  Please set ENV['AMAZON_ACCESS_KEY_ID'] and ENV['AMAZON_SECRET_ACCESS_KEY']"
+      end
     end 
     
     before :each do
@@ -41,7 +48,7 @@ module Awsymandias
       Awsymandias::SimpleDB.get('awsymandias-tags','IntegrationTestDummyClass__dummy1')[:tags_for_object].should == ['integration_test_tag']
       Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag')[:objects_with_tag].should == ['IntegrationTestDummyClass__dummy1']
     end
-    
+        
     it "should properly modify tags on an object" do
       dummy = DummyClass.new
     
@@ -60,7 +67,7 @@ module Awsymandias
       dummy1.aws_tags.save
       sleep 1
       Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag')[:objects_with_tag].should == ['IntegrationTestDummyClass__dummy1']
-    
+       
       dummy2 = DummyClass.new 'dummy2'
       dummy2.aws_tags = [ 'integration_test_tag' ]
       dummy2.aws_tags.save
@@ -69,22 +76,57 @@ module Awsymandias
       tagged_objects.include?('IntegrationTestDummyClass__dummy1').should be_true
       tagged_objects.include?('IntegrationTestDummyClass__dummy2').should be_true
       tagged_objects.size.should == 2
-      
+       
       dummy2.aws_tags = [ 'integration_test_tag2' ]
       dummy2.aws_tags.save
       sleep 1
       Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag')[:objects_with_tag].should  == ['IntegrationTestDummyClass__dummy1']
       Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag2')[:objects_with_tag].should == ['IntegrationTestDummyClass__dummy2']
     end
+       
+    it "should be able to find object instances by tag" do
+      dummy1 = DummyClass.new 
+      dummy1.aws_tags = [ 'integration_test_tag' ]
+      dummy1.aws_tags.save
     
-    it "should delete tags when an object is destroyed" do 
-      dummy = DummyClass.new
-      dummy.aws_tags = [ 'integration_test_tag' ]
-      dummy.aws_tags.save
-      dummy.destroy
-      sleep 1
-      Awsymandias::SimpleDB.get('awsymandias-tags','IntegrationTestDummyClass__dummy1').should == {}
-      Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag').should == {}
+      dummy2 = DummyClass.new 'dummy2'
+      dummy2.aws_tags = [ 'integration_test_tag' ]
+      dummy2.aws_tags.save
+     
+      tagged_objects = DummyClass.find_instances_by_tag('integration_test_tag')
+      tagged_objects.include?('dummy1').should be_true
+      tagged_objects.include?('dummy2').should be_true
+      tagged_objects.size.should == 2
     end
+            
+    it "should delete tags when an object is destroyed" do 
+         dummy = DummyClass.new
+         dummy.aws_tags = [ 'integration_test_tag' ]
+         dummy.aws_tags.save
+         dummy.destroy
+         sleep 1
+         Awsymandias::SimpleDB.get('awsymandias-tags','IntegrationTestDummyClass__dummy1').should == {}
+         Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag').should == {}
+       end
+       
+      it "should delete tags when an object is destroyed and the object has its own destroy method" do 
+        class DummyClassWithDestroy     
+          include Awsymandias::Taggable
+          metadata_options :prefix => "IntegrationTestDummyClass"
+    
+          def self.find(ids = []); ids; end
+          def initialize(name = 'dummy1'); @name = name; end
+          def destroy; end
+          def id; @name; end
+        end
+        
+        dummy = DummyClassWithDestroy.new
+        dummy.aws_tags = [ 'integration_test_tag' ]
+        dummy.aws_tags.save
+        dummy.destroy
+        sleep 1
+        Awsymandias::SimpleDB.get('awsymandias-tags','IntegrationTestDummyClassWithDestroy__dummy1').should == {}
+        Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag').should == {}
+      end
   end
 end

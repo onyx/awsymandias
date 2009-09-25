@@ -17,7 +17,7 @@ namespace :spec do
   Spec::Rake::SpecTask.new(:integration) do |t|
     t.rcov = true
     t.rcov_opts = ["--text-summary", "--include-file lib/awsymandias", "--exclude gems,spec"]
-    t.spec_files = FileList['spec/integration/**/*_spec.rb']
+    t.spec_files = FileList['spec/integration/**/*.rb']
   end
   
 end

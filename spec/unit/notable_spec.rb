@@ -18,7 +18,7 @@ module Awsymandias
         it "should build SimpleDB keys properly with custom identifier and prefix" do
           class DummyClass2
             include Awsymandias::Notable
-            notable_options :identifier => :funky_id, :prefix => 'Foo'
+            metadata_options :identifier => :funky_id, :prefix => 'Foo'
             def funky_id; 'my_funky_id'; end
           end
 
@@ -85,7 +85,7 @@ module Awsymandias
     end
 
     context "destroy" do
-      it "should be defined and call destroy_notes if the class being extended by Notable does not already have a destroy method" do
+      it "should be defined and call destroy_metadata if the class being extended by Notable does not already have a destroy method" do
         class DummyClassWithoutDestroy
           include Awsymandias::Notable
           def initialize(name = 'dummy-1'); @name = name; end
@@ -94,22 +94,22 @@ module Awsymandias
 
         obj = DummyClassWithoutDestroy.new
         obj.respond_to?(:destroy).should == true
-        obj.should_receive(:destroy_notes)
+        obj.should_receive(:destroy_metadata)
         obj.destroy
       end
 
-      it "should be defined and call destroy_notes and then the native destroy if the class being extended by Notable has a destroy method" do
+      it "should be defined and call destroy_metadata and then the native destroy if the class being extended by Notable has a destroy method" do
         class DummyClassWithDestroy
-          def destroy;  true;  end
           include Awsymandias::Notable
           def initialize(name = 'dummy-1'); @name = name; end
+          def destroy;  true;  end
           def id; @name; end
 
-          def self.find(ids); puts ids.inspect ;end
+          def self.find(ids); ids ;end
         end
 
         obj = DummyClassWithDestroy.new
-        obj.should_receive(:destroy_notes)
+        obj.should_receive(:destroy_metadata)
         obj.destroy
       end
     end

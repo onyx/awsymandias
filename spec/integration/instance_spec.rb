@@ -10,7 +10,7 @@ describe 'a launched instance' do
     Awsymandias.secret_access_key = ENV['AMAZON_SECRET_ACCESS_KEY']
     
     if ENV['TEST_STACK_MANUALLY_LAUNCHED']
-      @stack = Awsymandias::EC2::ApplicationStack.find('instances')
+      @stack = Awsymandias::ApplicationStack.find('instances')
       @stack_lb = @stack.load_balancers['integration-test-balancer']
       @stack_lb_reset_info = { :instances => @stack_lb.instances,
                                :availability_zones => @stack_lb.availability_zones,
@@ -18,12 +18,12 @@ describe 'a launched instance' do
                              }
     else
       raise "Load Balancer should not be launched yet!" unless Awsymandias::RightElb.describe_lbs == []
-      @stack = Awsymandias::EC2::ApplicationStack.define('instances') do |s|
+      @stack = Awsymandias::ApplicationStack.define('instances') do |s|
         s.instance :box,  :image_id => 'ami-20b65349'
         s.instance :box2, :image_id => 'ami-20b65349'
         s.load_balancer "integration-test-balancer", 
                         :instances => [ :box ], 
-                        :availability_zones => [ Awsymandias::EC2::AvailabilityZones::US_EAST_1B.gsub('_','-') ], 
+                        :availability_zones => [ Awsymandias::EC2::AvailabilityZones::US_EAST_1B ], 
                         :health_check => { :healthy_threshold   => 2, 
                                            :unhealthy_threshold => 3,
                                            :timeout => 3,
@@ -75,7 +75,7 @@ describe 'a launched instance' do
   end
 
   it "simpledb:  should be saved" do
-    found_stack = Awsymandias::EC2::ApplicationStack.find('instances')
+    found_stack = Awsymandias::ApplicationStack.find('instances')
     
     found_stack.box.should_not be_nil
     found_stack.box.running?.should be_true
@@ -130,8 +130,8 @@ describe 'a launched instance' do
   end  
     
   it "load_balancers:  should update the availability zones when an assignment happens" do
-    availability_zone_a = Awsymandias::EC2::AvailabilityZones::US_EAST_1A.gsub('_','-')
-    availability_zone_b = Awsymandias::EC2::AvailabilityZones::US_EAST_1B.gsub('_','-')
+    availability_zone_a = Awsymandias::EC2::AvailabilityZones::US_EAST_1A
+    availability_zone_b = Awsymandias::EC2::AvailabilityZones::US_EAST_1B
 
     found_lb = Awsymandias::LoadBalancer.find("integration-test-balancer").first
     found_lb.availability_zones.should == [ availability_zone_b ]

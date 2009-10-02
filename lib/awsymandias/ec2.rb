@@ -37,12 +37,12 @@ module Awsymandias
     # All currently availability zones.
     # TODO Generate dynamically.
     module AvailabilityZones
-      US_EAST_1A = "us_east_1a"
-      US_EAST_1B = "us_east_1b"
-      US_EAST_1C = "us_east_1c"
+      US_EAST_1A = "us-east-1a"
+      US_EAST_1B = "us-east-1b"
+      US_EAST_1C = "us-east-1c"
 
-      EU_WEST_1A = "eu_west_1a"
-      EU_WEST_1B = "eu_west_1b"
+      EU_WEST_1A = "eu-west-1a"
+      EU_WEST_1B = "eu-west-1b"
     end
   
   end  

@@ -71,7 +71,7 @@ module Awsymandias
 
         def simpledb_key(extended_object)
           options = extended_object.class.metadata_options
-          "#{options[:prefix]}__#{extended_object.send(options[:identifier])}"
+          Kernel::silence_warnings() { "#{options[:prefix]}__#{extended_object.send(options[:identifier])}" }
         end
 
       end

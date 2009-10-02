@@ -13,7 +13,7 @@ module Awsymandias
     end
     
     def build_stack
-      Awsymandias::EC2::ApplicationStack.new(name, 
+      Awsymandias::ApplicationStack.new(name, 
         :instances => defined_instances,
         :volumes => defined_volumes,
         :roles => defined_roles,

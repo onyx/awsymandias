@@ -200,7 +200,7 @@ module Awsymandias
           mock_connection = mock("a connection")
           mock_connection.should_receive(:run_instances).
             with("an_id", 1, 1, "default", "gsg-keypair", nil, nil, "m1.small", nil, nil, 
-              "us_east_1a", nil).and_return(RUN_INSTANCES_SINGLE_RESULT_RESPONSE)
+              "us-east-1a", nil).and_return(RUN_INSTANCES_SINGLE_RESULT_RESPONSE)
 
           mock_connection.should_receive(:describe_instances).and_return(DESCRIBE_INSTANCES_SINGLE_RESULT_PENDING_RESPONSE)
 

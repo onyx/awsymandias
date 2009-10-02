@@ -30,7 +30,7 @@ unless defined?(Awsymandias)
         hostname = Socket.gethostname
 
         Awsymandias.stack_names.detect do |stack_name|
-          s = Awsymandias::EC2::ApplicationStack.find(stack_name)
+          s = Awsymandias::ApplicationStack.find(stack_name)
           s ? s.instances.detect{ |instance| instance.private_dns_name =~ /#{hostname}/  } : false
         end
       end
@@ -58,7 +58,7 @@ unless defined?(Awsymandias)
       
       def describe_stacks
         Awsymandias.stack_names.each do |stack_name|
-          stack = EC2::ApplicationStack.find(stack_name)
+          stack = ApplicationStack.find(stack_name)
           puts stack.summarize if stack
           puts ""
         end

@@ -11,10 +11,10 @@ describe Awsymandias do
       Awsymandias.should_receive(:stack_names).and_return(['x','y','z'])
     
       stack_x = mock( :instances => [ mock( :private_dns_name => 'abc' ), mock( :private_dns_name => 'def') ] )
-      Awsymandias::EC2::ApplicationStack.should_receive(:find).with('x').and_return(stack_x)
+      Awsymandias::ApplicationStack.should_receive(:find).with('x').and_return(stack_x)
 
       stack_y = mock( :instances => [ mock( :private_dns_name => 'ghi' ), mock( :private_dns_name => 'jkl' ) ] )
-      Awsymandias::EC2::ApplicationStack.should_receive(:find).with('y').and_return(stack_y)
+      Awsymandias::ApplicationStack.should_receive(:find).with('y').and_return(stack_y)
     
       Awsymandias.my_stack_name.should == 'y'
     end
@@ -25,7 +25,7 @@ describe Awsymandias do
       Awsymandias.should_receive(:stack_names).and_return(['x'])
     
       stack_x = mock( :instances => [ mock( :private_dns_name => 'abc' ), mock( :private_dns_name => 'def') ] )
-      Awsymandias::EC2::ApplicationStack.should_receive(:find).with('x').and_return(stack_x)
+      Awsymandias::ApplicationStack.should_receive(:find).with('x').and_return(stack_x)
     
       Awsymandias.my_stack_name.should be_nil
     end

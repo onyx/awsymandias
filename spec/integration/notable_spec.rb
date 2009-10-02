@@ -63,23 +63,5 @@ module Awsymandias
       Awsymandias::SimpleDB.get('awsymandias-notes','IntegrationTestDummyClass__dummy1').should == {}
     end
 
-    it "should delete notes when an object is destroyed and the object has its own destroy method" do 
-      class DummyClassWithDestroy     
-        include Awsymandias::Notable
-        metadata_options :prefix => "IntegrationTestDummyClass"
-  
-        def self.find(ids = []); ids; end
-        def initialize(name = 'dummy1'); @name = name; end
-        def destroy; end
-        def id; @name; end
-      end
-      
-      dummy = DummyClassWithDestroy.new
-      dummy.aws_notes = [ 'integration_test_note' ]
-      dummy.aws_notes.save
-      dummy.destroy
-      sleep 1
-      Awsymandias::SimpleDB.get('awsymandias-notes','IntegrationTestDummyClassWithDestroy__dummy1').should == {}
-    end
   end
 end

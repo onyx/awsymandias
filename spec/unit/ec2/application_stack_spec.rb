@@ -11,7 +11,7 @@ module Awsymandias
         end
 
         def list_domains
-          [ @store.keys ]
+          { :domains => @store.keys }
         end
 
         def put_attributes(domain, name, attributes)

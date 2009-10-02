@@ -1,5 +1,6 @@
 module Awsymandias
   module Taggable
+    include Notable
     
     module ClassMethods
       def instances_tagged_with(tag)
@@ -15,9 +16,10 @@ module Awsymandias
     end
     
     def self.included(klass)
+      super
       klass.instance_eval { @metadata_options = {:identifier => :id, :prefix => klass.name.split("::").last } }
+      klass.extend Awsymandias::Notable::ClassMethods
       klass.extend ClassMethods      
-      klass.send :include, Awsymandias::MetadataBase
     end
     
     def aws_tags
@@ -30,8 +32,15 @@ module Awsymandias
       @aws_tags.instance_variable_set "@original_tags", original_tags
       @aws_tags
     end
+    
+    def destroy_with_tags
+      self.aws_tags = []
+      self.aws_tags.save
+      destroy_without_tags
+    end
+    alias_method_chain :destroy, :tags
 
-    class Tags < Awsymandias::MetadataCollection
+    class Tags < Awsymandias::Notable::Notes
       class << self
       
         def metadata_label; 'tag'; end
@@ -70,12 +79,10 @@ module Awsymandias
           end
         end
 
-        def put_metadata_with_reverse(extended_object, tags)
-          put_metadata_without_reverse(extended_object, tags)
+        def put_metadata(extended_object, tags)
+          super
           Tags.put_reverse_tags(extended_object, tags)
         end
-        alias_method_chain :put_metadata, :reverse
-
       end
     end
     

@@ -72,6 +72,16 @@ module Awsymandias
         obj.aws_notes.save
       end
 
+      it "should save notes properly when using the shovel operator to add notes" do
+        obj = DummyClass.new
+        Notable::Notes.should_receive(:get_metadata).with(obj).and_return([])
+        Notable::Notes.should_receive(:put_metadata).with(obj, ['a'])
+
+        obj.aws_notes << 'a'
+        obj.aws_notes.instance_variable_get(:@aws_notes).should == ['a']
+        obj.aws_notes.save
+      end
+
       it "should reload the metadata from SimpleDB" do
         obj = DummyClass.new
         Awsymandias::SimpleDB.should_receive(:get).with(Notable::Notes.simpledb_domain, 
@@ -85,7 +95,7 @@ module Awsymandias
     end
 
     context "destroy" do
-      it "should be defined and call destroy_metadata if the class being extended by Notable does not already have a destroy method" do
+      it "should destroy notes" do
         class DummyClassWithoutDestroy
           include Awsymandias::Notable
           def initialize(name = 'dummy-1'); @name = name; end
@@ -93,23 +103,7 @@ module Awsymandias
         end
 
         obj = DummyClassWithoutDestroy.new
-        obj.respond_to?(:destroy).should == true
-        obj.should_receive(:destroy_metadata)
-        obj.destroy
-      end
-
-      it "should be defined and call destroy_metadata and then the native destroy if the class being extended by Notable has a destroy method" do
-        class DummyClassWithDestroy
-          include Awsymandias::Notable
-          def initialize(name = 'dummy-1'); @name = name; end
-          def destroy;  true;  end
-          def id; @name; end
-
-          def self.find(ids); ids ;end
-        end
-
-        obj = DummyClassWithDestroy.new
-        obj.should_receive(:destroy_metadata)
+        Notable::Notes.should_receive(:put_metadata).with(obj, [])
         obj.destroy
       end
     end

@@ -106,24 +106,5 @@ module Awsymandias
          Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag').should == {}
        end
        
-      it "should delete tags when an object is destroyed and the object has its own destroy method" do 
-        class DummyClassWithDestroy     
-          include Awsymandias::Taggable
-          metadata_options :prefix => "IntegrationTestDummyClass"
-    
-          def self.find(ids = []); ids; end
-          def initialize(name = 'dummy1'); @name = name; end
-          def destroy; end
-          def id; @name; end
-        end
-        
-        dummy = DummyClassWithDestroy.new
-        dummy.aws_tags = [ 'integration_test_tag' ]
-        dummy.aws_tags.save
-        dummy.destroy
-        sleep 1
-        Awsymandias::SimpleDB.get('awsymandias-tags','IntegrationTestDummyClassWithDestroy__dummy1').should == {}
-        Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag').should == {}
-      end
   end
 end

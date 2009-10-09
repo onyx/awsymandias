@@ -36,7 +36,7 @@ module Awsymandias
       end
     end
 
-    context "instances_tagged_with" do
+    describe "instances_tagged_with" do
       it "should return an array of instance identifiers tagged with the specified tag" do
         Taggable::Tags.should_receive(:instance_identifiers_tagged_with).with(:a_tag).and_return(['DummyClass__dummy1','DummyClass__dummy2'])
         DummyClass.instances_tagged_with(:a_tag).should == ['dummy1', 'dummy2']
@@ -49,64 +49,46 @@ module Awsymandias
 
     end
 
-    context "put_reverse_tags" do
+    describe "put_current_reverse_tags" do
       it "should add the key of the object to the reverse tag" do
        return_from_get_a = { :objects_with_tag => []   }
        Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-         key.should == 'DummyClass__dummy-1'
-         Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-           key.should == 'AwsymandiasTagValue__a'
-           Awsymandias::SimpleDB.should_receive(:put) do |domain, key, stuff, options|
-             key.should == 'AwsymandiasTagValue__a'
-             stuff.should == {:objects_with_tag => ["DummyClass__dummy-1"] }
-           end
-           return_from_get_a
-         end
+         key.should == 'AwsymandiasTagValue__a'
+         Taggable::Tags.should_receive(:put_reverse_tag).with('a', ["DummyClass__dummy-1"] )
          return_from_get_a
        end
 
-       Taggable::Tags.put_reverse_tags DummyClass.new, ['a']
+       Taggable::Tags.send :put_current_reverse_tags, DummyClass.new, ['a']
       end
 
       it "should not do re-put the reverse tag if the object is already in the reverse tag" do
         return_from_get_a = { :objects_with_tag => ['DummyClass__dummy-1']   }
 
         Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-          key.should == 'DummyClass__dummy-1'
-          Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-            key.should == 'AwsymandiasTagValue__a'
-            Awsymandias::SimpleDB.should_receive(:put).never
+          key.should == 'AwsymandiasTagValue__a'
+          Taggable::Tags.should_receive(:put_reverse_tag).never
 
-            return_from_get_a
-          end
-          { :objects_with_tag => [] }
+          return_from_get_a
         end
 
-        Taggable::Tags.put_reverse_tags DummyClass.new, ['a']
+        Taggable::Tags.send :put_current_reverse_tags, DummyClass.new, ['a']
       end
 
       it "should append the key of the object to the reverse tag" do
         return_from_get_a = { :objects_with_tag => ['DummyClass__dummy-123'] }
 
         Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-          key.should == 'DummyClass__dummy-1'
-          Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-            key.should == 'AwsymandiasTagValue__a'
-            Awsymandias::SimpleDB.should_receive(:put) do |domain, key, stuff, options|
-              key.should == 'AwsymandiasTagValue__a'
-              stuff.should == {:objects_with_tag => ['DummyClass__dummy-123', "DummyClass__dummy-1"] }
-            end
-
-            return_from_get_a
-          end
-          { :objects_with_tag => [] }
+          key.should == 'AwsymandiasTagValue__a'
+          Taggable::Tags.should_receive(:put_reverse_tag).with('a', ['DummyClass__dummy-123', 'DummyClass__dummy-1'] )
+          return_from_get_a
         end
 
-        Taggable::Tags.put_reverse_tags DummyClass.new, ['a']
+        Taggable::Tags.send :put_current_reverse_tags, DummyClass.new, ['a']
       end
-
+    end
+    
+    describe "clear_removed_reverse_tags" do
       it "should remove the object from reverse tags when tags are removed from the object" do
-        return_from_get_a = { :objects_with_tag => ['DummyClass__dummy-123'] }
         return_from_get_b = { :objects_with_tag => ['DummyClass__dummy-123', 'DummyClass__dummy-1'] }
 
         obj = DummyClass.new
@@ -115,51 +97,36 @@ module Awsymandias
           key.should == 'DummyClass__dummy-1'
 
           Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-            key.should == 'AwsymandiasTagValue__b'
-            Awsymandias::SimpleDB.should_receive(:put) do |domain, key, stuff, options|
-              key.should == 'AwsymandiasTagValue__b'
-              stuff.should == {:objects_with_tag => ['DummyClass__dummy-123'] }
-              Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-                key.should == 'AwsymandiasTagValue__a'
-                Awsymandias::SimpleDB.should_receive(:put) do |domain, key, stuff, options|
-                  key.should == 'AwsymandiasTagValue__a'
-                  stuff.should == {:objects_with_tag => ['DummyClass__dummy-123', "DummyClass__dummy-1"] }
-                end        
-                return_from_get_a
-              end        
-            end
+            key.should == 'AwsymandiasTagValue__b'            
+            Taggable::Tags.should_receive(:put_reverse_tag).with('b', ['DummyClass__dummy-123'] )
             return_from_get_b
           end
           { :tags_for_object => ['a','b'] }
         end
 
-        Taggable::Tags.put_reverse_tags obj, ['a']
+        Taggable::Tags.send :clear_removed_reverse_tags, obj, ['a']
       end
-
+    end
+    
+    describe "put_reverse_tag" do
       it "should delete reverse tags instead of store them if they contain no objects" do
-        return_from_get_a = { :objects_with_tag => ['DummyClass__dummy-1'] }
-
-        obj = DummyClass.new
-
-        Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-          key.should == 'DummyClass__dummy-1'
-
-          Awsymandias::SimpleDB.should_receive(:get) do |domain, key, options|
-            key.should == 'AwsymandiasTagValue__a'
-            Awsymandias::SimpleDB.should_receive(:delete) do |domain, key, stuff, options|
-              key.should == 'AwsymandiasTagValue__a'
-            end
-
-            return_from_get_a
-          end
-          { :tags_for_object => ['a'] }
+        Awsymandias::SimpleDB.should_receive(:delete) do |domain, key, stuff, options|
+          key.should == 'AwsymandiasTagValue__a'
         end
 
-        Taggable::Tags.put_reverse_tags obj, []
+        Taggable::Tags.send :put_reverse_tag, 'a', []
+      end
+      
+      it "should put the tag with the correct key and hash structure" do
+        Awsymandias::SimpleDB.should_receive(:put) do |domain, key, stuff, options|
+          key.should == 'AwsymandiasTagValue__b'
+          stuff.should == {:objects_with_tag => ['DummyClass__dummy-123'] }
+        end
+        Taggable::Tags.send :put_reverse_tag, 'b', ['DummyClass__dummy-123']
       end
     end
 
-    context "instance_identifiers_tagged_with" do
+    describe "instance_identifiers_tagged_with" do
       it "should return an array of object names with that tag" do
         Awsymandias::SimpleDB.should_receive(:get).with(Taggable::Tags.simpledb_domain, 
                                                         'AwsymandiasTagValue__some tag', 
@@ -175,10 +142,10 @@ module Awsymandias
       end
     end
 
-    context "put_metadata" do
-      it "should also call put_reversetags" do
-        obj = DummyClass.new
-        Taggable::Tags.should_receive(:put_reverse_tags)
+    describe "put_metadata" do
+      it "should also call clear_removed_reverse_tags and put_current_reverse_tags" do
+        Taggable::Tags.should_receive(:clear_removed_reverse_tags)
+        Taggable::Tags.should_receive(:put_current_reverse_tags)
         Awsymandias::SimpleDB.should_receive(:put) do |domain, key, stuff, options|
           key.should == 'DummyClass__dummy-1'
           stuff.should == {:tags_for_object => ["a"]}
@@ -187,7 +154,7 @@ module Awsymandias
       end
     end
     
-    context "destroy" do
+    describe "destroy" do
       it "should destroy tags" do
         class DummyClassWithoutDestroy
           include Awsymandias::Taggable

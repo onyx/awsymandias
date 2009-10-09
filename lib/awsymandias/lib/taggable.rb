@@ -46,43 +46,47 @@ module Awsymandias
         def metadata_label; 'tag'; end
         
         def instance_identifiers_tagged_with(tag)
-          raw_get = Awsymandias::SimpleDB.get(simpledb_domain, "AwsymandiasTagValue__#{tag}", {:marshall => false})
+          raw_get = Awsymandias::SimpleDB.get(simpledb_domain, tag_simpledb_key(tag), {:marshall => false})
           raw_get && !raw_get[:objects_with_tag].blank? ? raw_get[:objects_with_tag] : []
-        end
-
-        def put_reverse_tags(extended_object, tags)
-          original_tags = extended_object.aws_tags.instance_variable_get("@original_tags") 
-          if original_tags && !original_tags.empty?
-            removed_tags = original_tags - tags
-            removed_tags.each do |tag|
-              objects_with_tag = instance_identifiers_tagged_with(tag) - [simpledb_key(extended_object)]
-              if objects_with_tag.empty?
-                Awsymandias::SimpleDB.delete simpledb_domain, "AwsymandiasTagValue__#{tag}"
-              else
-                Awsymandias::SimpleDB.put simpledb_domain, 
-                                          "AwsymandiasTagValue__#{tag}", 
-                                          {:objects_with_tag => objects_with_tag }, 
-                                          :marshall => false
-              end
-            end
-          end
-          
-          tags.each do |tag|
-            objects_with_tag = instance_identifiers_tagged_with(tag)
-            unless objects_with_tag.include? simpledb_key(extended_object)
-              objects_with_tag << simpledb_key(extended_object)
-              Awsymandias::SimpleDB.put simpledb_domain, 
-                                        "AwsymandiasTagValue__#{tag}", 
-                                        {:objects_with_tag => objects_with_tag }, 
-                                        :marshall => false
-            end
-          end
         end
 
         def put_metadata(extended_object, tags)
           super
-          Tags.put_reverse_tags(extended_object, tags)
+          clear_removed_reverse_tags(extended_object, tags)
+          put_current_reverse_tags(extended_object, tags)
         end
+
+        def put_reverse_tag(tag, object_ids)
+          if object_ids.empty?
+            Awsymandias::SimpleDB.delete simpledb_domain, tag_simpledb_key(tag)
+          else
+            Awsymandias::SimpleDB.put simpledb_domain, tag_simpledb_key(tag), {:objects_with_tag => object_ids }, :marshall => false
+          end
+        end
+
+        private
+        
+        def clear_removed_reverse_tags(extended_object, tags)
+          original_tags = extended_object.aws_tags.instance_variable_get("@original_tags") || []
+          (original_tags - tags).each do |tag|
+            objects_to_have_tag = instance_identifiers_tagged_with(tag).reject { |object_id| object_id == simpledb_key(extended_object) }
+            put_reverse_tag tag, objects_to_have_tag
+          end
+        end
+
+        def put_current_reverse_tags(extended_object, tags)
+          tags.each do |tag|
+            objects_to_have_tag = instance_identifiers_tagged_with(tag)
+            unless objects_to_have_tag.include? simpledb_key(extended_object)
+              put_reverse_tag tag, objects_to_have_tag.push( simpledb_key( extended_object) ) 
+            end
+          end
+        end
+
+        def tag_simpledb_key(tag)
+          "AwsymandiasTagValue__#{tag}"
+        end
+
       end
     end
     

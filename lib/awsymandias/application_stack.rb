@@ -142,7 +142,14 @@ module Awsymandias
                 "instance #{i.instance_id} at #{options[:unix_device]}."
         end
         
-        Awsymandias::RightAws.wait_for_create_volume(options[:snapshot_id], i.aws_availability_zone)
+        target_snapshot = Awsymandias::Snapshot.find(options[:snapshot_id]).first
+        if target_snapshot
+          new_vol = Awsymandias::RightAws.wait_for_create_volume(target_snapshot.id, i.aws_availability_zone)
+          new_vol.aws_notes << "Snapshot tags: #{target_snapshot.aws_tags.join(',')}"
+          new_vol.aws_notes << "Created for stack '#{@name}'"
+          new_vol.aws_notes.save
+          new_vol
+        end
       end
       
       sleep 2 # There seems to be a race condition between when the volume says it is available and actually being able to attach it

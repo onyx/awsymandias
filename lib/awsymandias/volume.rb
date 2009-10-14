@@ -3,7 +3,10 @@ module Awsymandias
     include Awsymandias::Taggable
     include Awsymandias::Notable
     hash_initializer :aws_size, :aws_device, :aws_attachment_status, :zone, :snapshot_id, :aws_attached_at, :aws_status, :aws_id, :aws_created_at, :aws_instance_id, :stack
-    attr_reader :aws_size, :aws_device, :aws_attachment_status, :zone, :snapshot_id, :aws_attached_at, :aws_status, :aws_id, :aws_created_at, :aws_instance_id
+    
+    ATTRIBUTES = [:aws_size, :aws_device, :aws_attachment_status, :zone, :snapshot_id, :aws_attached_at, :aws_status, :aws_id, :aws_created_at, :aws_instance_id]
+    attr_reader *ATTRIBUTES
+    
     
     def self.find(*ids)
       Awsymandias::RightAws.connection.describe_volumes(ids).map { |v| Awsymandias::Volume.new v }
@@ -60,7 +63,7 @@ module Awsymandias
     def reload
       data = Awsymandias::RightAws.connection.describe_volumes(self.aws_id).first
       data.symbolize_keys!
-      data.keys.each do |attribute_name|
+      ATTRIBUTES.each do |attribute_name|
         instance_variable_set "@#{attribute_name}", data[attribute_name]
       end
       self

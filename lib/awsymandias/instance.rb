@@ -123,7 +123,7 @@ module Awsymandias
       end
 
       def launch(opts={})
-        opts.assert_valid_keys :image_id, :key_name, :instance_type, :availability_zone, :user_data
+        opts.assert_valid_keys :image_id, :key_name, :instance_type, :availability_zone, :user_data, :group_ids
         opts[:instance_type] = opts[:instance_type].name if opts[:instance_type].is_a?(Awsymandias::EC2::InstanceType)
       
         response = Awsymandias::RightAws.connection.run_instances *run_instance_opts_to_args(opts)

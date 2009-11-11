@@ -41,16 +41,12 @@ module Awsymandias
         snapshot ? Awsymandias::Snapshot.new(snapshot) : nil
       end
 
-      def snapshot_size(snapshot_id)
-        connection.describe_volumes([connection.describe_snapshots([snapshot_id]).first[:aws_volume_id]]).first[:aws_size]
-      end  
-    
       def delete_snapshot(snapshot_id)
         connection.delete_snapshot snapshot_id
       end
 
-      def wait_for_create_volume(snapshot_id, availability_zone)
-        new_volume = connection.create_volume snapshot_id, snapshot_size(snapshot_id), availability_zone
+      def wait_for_create_volume(snapshot_id, availability_zone, new_volume_size = 20)
+        new_volume = connection.create_volume snapshot_id, new_volume_size, availability_zone
 
         Awsymandias.wait_for "new volume #{new_volume[:aws_id]} from snapshot #{snapshot_id} to become available..", 3 do
           connection.describe_volumes(new_volume[:aws_id]).first[:aws_status] == 'available'

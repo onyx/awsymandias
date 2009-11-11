@@ -54,23 +54,13 @@ module Awsymandias
       end      
     end
     
-    describe "snapshot_size" do
-      it "returns the size of the volume that the snapshot was based on" do
-        stub_describe_snapshots [{:aws_id => 'snapshot_1', :aws_volume_id => 'some_volume'}]
-        stub_describe_volumes [{ :aws_id => 'some_volume', :aws_size => 123 }]
-        
-        RightAws.snapshot_size('snapshot_1').should == 123
-      end
-    end
-    
     describe "wait_for_create_volume" do
       it "should call create_volume and return the volume when its status is 'completed'" do
         attributes = {:aws_id => 'a_volume_id', :aws_status => 'available'}
         new_volume = Awsymandias::Volume.new attributes
         stub_describe_volumes [attributes]
         
-        @connection.should_receive(:create_volume).with('some_snapshot',123,'a_zone').and_return(attributes)
-        RightAws.should_receive(:snapshot_size).and_return(123)
+        @connection.should_receive(:create_volume).with('some_snapshot',20,'a_zone').and_return(attributes)
         RightAws.wait_for_create_volume('some_snapshot','a_zone').attributes.should == new_volume.attributes
       end
     end

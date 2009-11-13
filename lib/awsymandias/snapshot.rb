@@ -5,7 +5,7 @@ module Awsymandias
     hash_initializer :aws_progress, :aws_status, :aws_id, :aws_volume_id, :aws_started_at, :stack
     attr_reader      :aws_progress, :aws_status, :aws_id, :aws_volume_id, :aws_started_at
 
-    def self.find(*ids)
+    def self.find(ids)
       Awsymandias::RightAws.connection.describe_snapshots(ids).map { |s| Awsymandias::Snapshot.new s }
     end
     

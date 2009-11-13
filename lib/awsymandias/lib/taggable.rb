@@ -11,7 +11,7 @@ module Awsymandias
       
       def find_by_tag(tag)
         ids = instances_tagged_with(tag)
-        respond_to?(:find) && ids ? find(ids) : ids
+        respond_to?(:find) && !ids.empty? ? find(ids) : ids
       end
     end
     

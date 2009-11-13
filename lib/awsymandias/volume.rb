@@ -8,7 +8,7 @@ module Awsymandias
     attr_reader *ATTRIBUTES
     
     
-    def self.find(*ids)
+    def self.find(ids)
       Awsymandias::RightAws.connection.describe_volumes(ids).map { |v| Awsymandias::Volume.new v }
     end
         

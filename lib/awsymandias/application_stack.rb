@@ -67,7 +67,7 @@ module Awsymandias
     end
 
     def volume(name, opts = {})
-      opts.assert_valid_keys :volume_id, :instance, :unix_device, :snapshot_id, :role, :all_instances
+      opts.assert_valid_keys :volume_id, :instance, :unix_device, :snapshot_id, :role, :all_instances, :size
       @volumes[name] = opts
     end
 
@@ -144,7 +144,7 @@ module Awsymandias
         
         target_snapshot = Awsymandias::Snapshot.find(options[:snapshot_id]).first
         if target_snapshot
-          new_vol = Awsymandias::RightAws.wait_for_create_volume(target_snapshot.id, i.aws_availability_zone)
+          new_vol = Awsymandias::RightAws.wait_for_create_volume(target_snapshot.id, i.aws_availability_zone, options[:size] || 20)
           new_vol.aws_notes << "Snapshot tags: #{target_snapshot.aws_tags.join(',')}"
           new_vol.aws_notes << "Created for stack '#{@name}'"
           new_vol.aws_notes.save
@@ -261,7 +261,11 @@ module Awsymandias
         unless metadata[:load_balancers].empty?
           live_lbs = Awsymandias::LoadBalancer.find( metadata[:load_balancers].keys ).index_by(&:name)
           metadata[:load_balancers].each_pair do |lb_name, lb|
-            @load_balancers[lb_name] = live_lbs[lb_name]
+            if live_lbs[lb_name]
+              @load_balancers[lb_name] = live_lbs[lb_name]
+            else
+              @load_balancers.delete lb_name
+            end
           end
         end
         
@@ -273,9 +277,13 @@ module Awsymandias
                                                      ).index_by(&:instance_id)
           metadata[:instances] = metadata[:instances]
           metadata[:instances].each_pair do |instance_name, instance_metadata|
-            @instances[instance_name] = live_instances[instance_metadata[:aws_instance_id]]
-            @instances[instance_name].name = instance_name
-            define_methods_for_instance(instance_name)
+            if live_instances[instance_metadata[:aws_instance_id]]
+              @instances[instance_name] = live_instances[instance_metadata[:aws_instance_id]]
+              @instances[instance_name].name = instance_name
+              define_methods_for_instance(instance_name)
+            else
+              @instances.delete instance_name
+            end
           end
         end
         

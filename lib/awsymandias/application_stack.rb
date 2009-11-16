@@ -67,7 +67,7 @@ module Awsymandias
     end
 
     def volume(name, opts = {})
-      opts.assert_valid_keys :volume_id, :instance, :unix_device, :snapshot_id, :role, :all_instances, :size
+      opts.assert_valid_keys :volume_id, :instance, :unix_device, :snapshot_id, :role, :all_instances
       @volumes[name] = opts
     end
 
@@ -144,7 +144,7 @@ module Awsymandias
         
         target_snapshot = Awsymandias::Snapshot.find(options[:snapshot_id]).first
         if target_snapshot
-          new_vol = Awsymandias::RightAws.wait_for_create_volume(target_snapshot.id, i.aws_availability_zone, options[:size] || 20)
+          new_vol = Awsymandias::RightAws.wait_for_create_volume(target_snapshot.id, i.aws_availability_zone)
           new_vol.aws_notes << "Snapshot tags: #{target_snapshot.aws_tags.join(',')}"
           new_vol.aws_notes << "Created for stack '#{@name}'"
           new_vol.aws_notes.save

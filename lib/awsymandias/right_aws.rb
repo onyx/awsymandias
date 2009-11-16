@@ -45,8 +45,8 @@ module Awsymandias
         connection.delete_snapshot snapshot_id
       end
 
-      def wait_for_create_volume(snapshot_id, availability_zone, new_volume_size = 20)
-        new_volume = connection.create_volume snapshot_id, new_volume_size, availability_zone
+      def wait_for_create_volume(snapshot_id, availability_zone)
+        new_volume = connection.create_volume snapshot_id, nil, availability_zone
 
         Awsymandias.wait_for "new volume #{new_volume[:aws_id]} from snapshot #{snapshot_id} to become available..", 3 do
           connection.describe_volumes(new_volume[:aws_id]).first[:aws_status] == 'available'

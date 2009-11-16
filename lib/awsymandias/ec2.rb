@@ -15,6 +15,8 @@ module Awsymandias
           Awsymandias::EC2::InstanceTypes::M1_SMALL, 
           Awsymandias::EC2::InstanceTypes::M1_LARGE, 
           Awsymandias::EC2::InstanceTypes::M1_XLARGE, 
+          Awsymandias::EC2::InstanceTypes::M2_2XLARGE, 
+          Awsymandias::EC2::InstanceTypes::M2_4XLARGE, 
           Awsymandias::EC2::InstanceTypes::C1_MEDIUM, 
           Awsymandias::EC2::InstanceTypes::C1_XLARGE 
         ].index_by(&:name)
@@ -26,12 +28,15 @@ module Awsymandias
     # All currently available instance types.
     # TODO Generate dynamically.
     module InstanceTypes
-      M1_SMALL  = InstanceType.new("m1.small",  Money.new(10))
-      M1_LARGE  = InstanceType.new("m1.large",  Money.new(40))
-      M1_XLARGE = InstanceType.new("m1.xlarge", Money.new(80))
+      M1_SMALL  = InstanceType.new("m1.small",  Money.new(8.5))
+      M1_LARGE  = InstanceType.new("m1.large",  Money.new(34))
+      M1_XLARGE = InstanceType.new("m1.xlarge", Money.new(68))
 
-      C1_MEDIUM = InstanceType.new("c1.medium", Money.new(20))
-      C1_XLARGE = InstanceType.new("c1.xlarge", Money.new(80))
+      M2_2XLARGE = InstanceType.new("m2.2xlarge", Money.new(120))
+      M2_4XLARGE = InstanceType.new("m2.4xlarge", Money.new(240))
+
+      C1_MEDIUM = InstanceType.new("c1.medium", Money.new(17))
+      C1_XLARGE = InstanceType.new("c1.xlarge", Money.new(68))
     end
         
     # All currently availability zones.

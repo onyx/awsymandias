@@ -19,6 +19,10 @@ module Awsymandias
       SimpleDB.put('snapshots', name, :snapshot_id => id)
     end
     
+    def completed?
+      aws_status == 'completed'
+    end
+    
     def to_simpledb; id; end
     
     def terminate!

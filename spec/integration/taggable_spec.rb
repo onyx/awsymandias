@@ -69,9 +69,19 @@ module Awsymandias
       dummy2.aws_tags = [ 'integration_test_tag' ]
       dummy2.aws_tags.save
       sleep 1
+
+      dummy3 = DummyClass.new 'dummy3'
+      dummy3.aws_tags = [ 'integration_test_tag' ]
+      dummy3.aws_tags.save
+      sleep 1
+      dummy3.aws_tags.delete 'integration_test_tag'
+      dummy3.aws_tags.save
+      sleep 1
+
       tagged_objects = Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag')[:objects_with_tag]
       tagged_objects.include?('IntegrationTestDummyClass__dummy1').should be_true
       tagged_objects.include?('IntegrationTestDummyClass__dummy2').should be_true
+      tagged_objects.include?('IntegrationTestDummyClass__dummy3').should be_false
       tagged_objects.size.should == 2
        
       dummy2.aws_tags = [ 'integration_test_tag2' ]
@@ -90,6 +100,7 @@ module Awsymandias
       dummy2.aws_tags = [ 'integration_test_tag' ]
       dummy2.aws_tags.save
      
+      sleep 1
       tagged_objects = DummyClass.find_by_tag('integration_test_tag')
       tagged_objects.include?('dummy1').should be_true
       tagged_objects.include?('dummy2').should be_true
@@ -97,14 +108,14 @@ module Awsymandias
     end
             
     it "should delete tags when an object is destroyed" do 
-         dummy = DummyClass.new
-         dummy.aws_tags = [ 'integration_test_tag' ]
-         dummy.aws_tags.save
-         dummy.destroy
-         sleep 1
-         Awsymandias::SimpleDB.get('awsymandias-tags','IntegrationTestDummyClass__dummy1').should == {}
-         Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag').should == {}
-       end
+       dummy = DummyClass.new
+       dummy.aws_tags = [ 'integration_test_tag' ]
+       dummy.aws_tags.save
+       dummy.destroy
+       sleep 1
+       Awsymandias::SimpleDB.get('awsymandias-tags','IntegrationTestDummyClass__dummy1').should == {}
+       Awsymandias::SimpleDB.get('awsymandias-tags','AwsymandiasTagValue__integration_test_tag').should == {}
+     end
        
   end
 end

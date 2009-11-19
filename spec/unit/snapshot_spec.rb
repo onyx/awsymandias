@@ -16,15 +16,15 @@ module Awsymandias
     end
     
     describe "find" do
-      it "should return an array of Awsymandias::Snapshot objects." do
+      it "should return a Awsymandias::Snapshot object." do
         connection = mock('connection')
         connection.should_receive(:describe_snapshots).and_return(
-          [{:aws_id => :some_snapshot_id}, {:aws_id => :another_snapshot_id}]
+          [{:aws_id => :some_snapshot_id}]
         )
         Awsymandias::RightAws.should_receive(:connection).and_return(connection)
         
-        snapshots = Snapshot.find
-        snapshots.map(&:aws_id).should == [:some_snapshot_id, :another_snapshot_id]
+        snapshots = Snapshot.find :some_snapshot_id
+        snapshots.map(&:aws_id).should == [:some_snapshot_id]
         snapshots.map(&:class).uniq.should == [Awsymandias::Snapshot]
       end
     end

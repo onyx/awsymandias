@@ -21,15 +21,15 @@ module Awsymandias
     end
     
     describe "find" do
-      it "should return an array of Awsymandias::Volume objects." do
+      it "should return an Awsymandias::Volume object." do
         connection = mock('connection')
         connection.should_receive(:describe_volumes).and_return(
-          [{:aws_id => :some_volume_id}, {:aws_id => :another_volume_id}]
+          [{:aws_id => :some_volume_id}]
         )
         Awsymandias::RightAws.should_receive(:connection).and_return(connection)
         
-        volumes = Volume.find
-        volumes.map(&:aws_id).should == [:some_volume_id, :another_volume_id]
+        volumes = Volume.find :some_volume_id
+        volumes.map(&:aws_id).should == [:some_volume_id]
         volumes.map(&:class).uniq.should == [Awsymandias::Volume]
       end
     end

@@ -30,9 +30,9 @@ module Awsymandias
       end
 
       it "should not call find if find_instances_by_tag returns no ids" do
-        DummyClass.should_receive(:instances_tagged_with).with('some_tag').and_return(nil)
+        DummyClass.should_receive(:instances_tagged_with).with('some_tag').and_return([])
         DummyClass.should_receive(:find).never
-        DummyClass.find_by_tag('some_tag').should be_nil
+        DummyClass.find_by_tag('some_tag').should == []
       end
     end
 

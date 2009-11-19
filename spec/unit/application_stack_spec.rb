@@ -337,9 +337,13 @@ module Awsymandias
           with(hash_including(:instance_type => Awsymandias::EC2::InstanceTypes::M1_SMALL)).once.
           and_return(stub_instance)
         
+        Awsymandias::Snapshot.should_receive(:find).exactly(3).times.with('snap-123').and_return [mock(:id => 'snap-123', :aws_tags => [])]
+        volume_1 = mock(:aws_id => "vol-123-1", :aws_notes => mock(:save => nil, :<< => nil))
+        volume_2 = mock(:aws_id => "vol-123-2", :aws_notes => mock(:save => nil, :<< => nil))
+        volume_3 = mock(:aws_id => "vol-123-3", :aws_notes => mock(:save => nil, :<< => nil))
         Awsymandias::RightAws.should_receive(:wait_for_create_volume).exactly(3).times.
           with("snap-123", instances.first.aws_availability_zone).
-          and_return(volume_1 = mock(:aws_id => "vol-123-1"), volume_2 = mock(:aws_id => "vol-123-2"), volume_3 = mock(:aws_id => "vol-123-3"))
+          and_return(volume_1, volume_2, volume_3)
           
         volume_1.should_receive(:attach_to_once_running).with(instances[0], "/dev/sdj")
         volume_2.should_receive(:attach_to_once_running).with(instances[1], "/dev/sdj")
@@ -362,9 +366,12 @@ module Awsymandias
         
         Instance.should_receive(:launch).exactly(2).times.and_return(*instances)
                   
+        Awsymandias::Snapshot.should_receive(:find).exactly(2).times.with('snap-123').and_return [mock(:id => 'snap-123', :aws_tags => [])]
+        volume_1 = mock(:aws_id => "vol-123-1", :aws_notes => mock(:save => nil, :<< => nil))
+        volume_2 = mock(:aws_id => "vol-123-2", :aws_notes => mock(:save => nil, :<< => nil))
         Awsymandias::RightAws.should_receive(:wait_for_create_volume).exactly(2).times.
           with("snap-123", instances.first.aws_availability_zone).
-          and_return(volume_1 = mock(:aws_id => "vol-123-1"), volume_2 = mock(:aws_id => "vol-123-2"))
+          and_return(volume_1, volume_2)
           
         volume_1.should_receive(:attach_to_once_running).with(instances[0], "/dev/sdj")
         volume_2.should_receive(:attach_to_once_running).with(instances[1], "/dev/sdj")

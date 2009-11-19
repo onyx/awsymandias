@@ -60,7 +60,7 @@ module Awsymandias
         new_volume = Awsymandias::Volume.new attributes
         stub_describe_volumes [attributes]
         
-        @connection.should_receive(:create_volume).with('some_snapshot',20,'a_zone').and_return(attributes)
+        @connection.should_receive(:create_volume).with('some_snapshot',nil,'a_zone').and_return(attributes)
         RightAws.wait_for_create_volume('some_snapshot','a_zone').attributes.should == new_volume.attributes
       end
     end

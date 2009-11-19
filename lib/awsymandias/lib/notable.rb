@@ -45,7 +45,7 @@ module Awsymandias
         def find(extended_object)
           fetched_metadata = get_metadata(extended_object)
           collection = new fetched_metadata, extended_object
-          collection.instance_variable_set "@original_#{metadata_label.pluralize}", fetched_metadata
+          collection.set_original fetched_metadata
           collection
         end
 
@@ -82,7 +82,7 @@ module Awsymandias
 
         class_eval <<-END
           extend ::Forwardable
-          def_delegators :#{collection_instance_variable_name}, :<<, :+, :-, :first, :last, :size, :uniq, :join, :each, :inspect, :delete, :compact
+          def_delegators :#{collection_instance_variable_name}, :<<, :+, :-, :first, :last, :size, :uniq, :join, :each, :inspect, :delete
         END
       end
 
@@ -93,7 +93,11 @@ module Awsymandias
       def save
         collection = instance_variable_get(collection_instance_variable_name)
         self.class.put_metadata(@extended_object, collection)
-        instance_variable_set "@original_#{self.class.metadata_label.pluralize}", collection
+        set_original collection
+      end
+      
+      def set_original collection
+        instance_variable_set "@original_#{self.class.metadata_label.pluralize}", collection.clone
       end
 
       def destroy

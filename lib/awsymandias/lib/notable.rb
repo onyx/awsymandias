@@ -82,7 +82,7 @@ module Awsymandias
 
         class_eval <<-END
           extend ::Forwardable
-          def_delegators :#{collection_instance_variable_name}, :<<, :+, :-, :first, :last, :size, :uniq, :join, :each, :inspect
+          def_delegators :#{collection_instance_variable_name}, :<<, :+, :-, :first, :last, :size, :uniq, :join, :each, :inspect, :delete, :compact
         END
       end
 

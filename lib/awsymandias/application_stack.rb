@@ -259,7 +259,7 @@ module Awsymandias
         metadata[:load_balancers] ||= []
         @unlaunched_load_balancers = metadata[:unlaunched_load_balancers]
         unless metadata[:load_balancers].empty?
-          live_lbs = Awsymandias::LoadBalancer.find( metadata[:load_balancers].keys ).index_by(&:name)
+          live_lbs = Awsymandias::LoadBalancer.find(*metadata[:load_balancers].keys).index_by(&:name)
           metadata[:load_balancers].each_pair do |lb_name, lb|
             if live_lbs[lb_name]
               @load_balancers[lb_name] = live_lbs[lb_name]

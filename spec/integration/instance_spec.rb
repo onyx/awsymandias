@@ -17,7 +17,14 @@ describe 'a launched instance' do
                                :health_check => @stack_lb.health_check.attributes
                              }
     else
-      raise "Load Balancer should not be launched yet!" unless Awsymandias::RightElb.describe_lbs == []
+       
+       begin 
+         balancer = Awsymandias::LoadBalancer.find('integration-test-balancer')
+         raise "Load Balancer should not be launched yet!" unless balancer.empty?
+       rescue RightAws::AwsError => e
+         raise e unless e.message =~ /LoadBalancerNotFound/
+       end 
+         
       @stack = Awsymandias::ApplicationStack.define('instances') do |s|
         s.instance :box,  :image_id => 'ami-20b65349'
         s.instance :box2, :image_id => 'ami-20b65349'
@@ -54,7 +61,7 @@ describe 'a launched instance' do
       @stack_lb.availability_zones = @stack_lb_reset_info[:availability_zones]
       @stack_lb.health_check = @stack_lb_reset_info[:health_check]
     else
-      @stack.terminate!
+      @stack.terminate! if @stack
     end
   end
   

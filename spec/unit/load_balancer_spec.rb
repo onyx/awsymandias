@@ -129,17 +129,13 @@ module Awsymandias
     end
     
     describe "find" do
-      # it "should return an array of Awsymandias::Snapshot objects." do
-      #   connection = mock('connection')
-      #   connection.should_receive(:describe_snapshots).and_return(
-      #     [{:aws_id => :some_snapshot_id}, {:aws_id => :another_snapshot_id}]
-      #   )
-      #   Awsymandias::RightAws.should_receive(:connection).and_return(connection)
-      #   
-      #   snapshots = Snapshot.find
-      #   snapshots.map(&:aws_id).should == [:some_snapshot_id, :another_snapshot_id]
-      #   snapshots.map(&:class).uniq.should == [Awsymandias::Snapshot]
-      # end
+      it "should return an array of Awsymandias::LoadBalancer objects." do
+        names = ['elb-1','elb-1']
+        @elb_connection.should_receive(:describe_lbs).with(names).and_return([{:name => 'elb-1', :instances => anything }, {:name => 'elb-2', :instances => anything }])
+        
+        load_balancers = LoadBalancer.find(*names)
+        load_balancers.size.should == 2
+      end
     end
       
     describe "health_check=" do

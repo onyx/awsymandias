@@ -698,6 +698,18 @@ module Awsymandias
     end
         
     describe "reload_from_metadata!" do
+      
+      it "should find load_balancers from metadata" do
+        s = ApplicationStack.define("test") do |s| 
+          s.load_balancer 'test-lb1' 
+          s.load_balancer 'test-lb2' 
+        end  
+        Awsymandias::SimpleDB.should_receive(:get).with(s.simpledb_domain, s.name).and_return({:load_balancers => {'test-lb1' => 'test-lb1', 'test-lb2' => 'test-lb2'}, :instances => [], :roles => {}}) 
+        
+        Awsymandias::LoadBalancer.should_receive(:find).with('test-lb1', 'test-lb2').and_return([])
+        s.send(:reload_from_metadata!)
+      end
+      
       it "should have more than just a pending test"
     end
         

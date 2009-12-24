@@ -704,17 +704,31 @@ module Awsymandias
           s.load_balancer 'test-lb1' 
           s.load_balancer 'test-lb2' 
         end  
-        Awsymandias::SimpleDB.should_receive(:get).with(s.simpledb_domain, s.name).and_return({:load_balancers => {'test-lb1' => 'test-lb1', 'test-lb2' => 'test-lb2'}, :instances => [], :roles => {}}) 
+        metadata = {:load_balancers => {'test-lb1' => 'test-lb1', 'test-lb2' => 'test-lb2'}, :instances => [], :roles => {}}
+        
+        Awsymandias::Metadata.should_receive(:get).with(s.simpledb_domain, s.name).and_return(metadata) 
         
         Awsymandias::LoadBalancer.should_receive(:find).with('test-lb1', 'test-lb2').and_return([])
         s.send(:reload_from_metadata!)
       end
       
-      it "should have more than just a pending test"
+      it "should have more tests"
     end
         
     describe "store_app_stack_metadata!" do
-      it "should have more than just a pending test"
+      it "should save metadata" do
+        s = ApplicationStack.define("test") do |s| 
+          s.instance 'instance1'
+          s.load_balancer 'test-lb1' 
+          s.load_balancer 'test-lb2' 
+          s.role :app, :instance1
+        end  
+        metadata =  {:unlaunched_instances=>{"instance1"=>{}}, :load_balancers=>{}, :roles=>{:app=>["instance1"]}, :unlaunched_load_balancers=>{"test-lb1"=>{}, "test-lb2"=>{}}, :instances=>{}}
+        
+        Awsymandias::Metadata.should_receive(:put).with(s.simpledb_domain, s.name, metadata) 
+        s.send(:store_app_stack_metadata!)
+      end  
+      
     end
   end
 end

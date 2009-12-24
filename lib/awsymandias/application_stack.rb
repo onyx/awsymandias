@@ -243,16 +243,16 @@ module Awsymandias
           metadata[collection][item_name] = item.to_simpledb
         end
       end
-
-      Awsymandias::SimpleDB.put @simpledb_domain, @name, metadata
+      
+      Awsymandias::Metadata.put @simpledb_domain, @name, metadata
     end
 
     def remove_app_stack_metadata!
-      Awsymandias::SimpleDB.delete @simpledb_domain, @name
+      Awsymandias::Metadata.delete @simpledb_domain, @name
     end
 
     def reload_from_metadata!
-      metadata = Awsymandias::SimpleDB.get @simpledb_domain, @name 
+      metadata = Awsymandias::Metadata.get @simpledb_domain, @name 
     
       unless metadata.empty?
         metadata[:unlaunched_load_balancers] ||= []

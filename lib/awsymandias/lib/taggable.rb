@@ -1,3 +1,5 @@
+require File.dirname(__FILE__) + '/notable.rb' 
+
 module Awsymandias
   module Taggable
     include Notable

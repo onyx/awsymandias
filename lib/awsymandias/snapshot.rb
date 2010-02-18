@@ -2,11 +2,15 @@ module Awsymandias
   class Snapshot
     include Awsymandias::Taggable
     include Awsymandias::Notable
-    hash_initializer :aws_progress, :aws_status, :aws_id, :aws_volume_id, :aws_started_at, :stack
-    attr_reader      :aws_progress, :aws_status, :aws_id, :aws_volume_id, :aws_started_at
+    hash_initializer :aws_progress, :aws_status, :aws_id, :aws_volume_id, :aws_started_at, :aws_description, :stack
+    attr_reader      :aws_progress, :aws_status, :aws_id, :aws_volume_id, :aws_started_at, :aws_description
 
     def self.find(ids)
       Awsymandias::RightAws.connection.describe_snapshots(ids).map { |s| Awsymandias::Snapshot.new s }
+    end
+    
+    def self.find_by_description(description)
+      Awsymandias::RightAws.connection.describe_snapshots.select { |s| s[:aws_description] == description }.map { |s| Awsymandias::Snapshot.new s }
     end
     
     def id; aws_id; end

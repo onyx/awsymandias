@@ -114,8 +114,12 @@ module Awsymandias
         opts = args.extract_options!
         ids = args.first == :all ? opts[:instance_ids] : [args.first].flatten
         
-        found = RightAws.connection.describe_instances(ids).map do |instance_attributes| 
-          instantiate_record instance_attributes
+        begin
+          found = RightAws.connection.describe_instances(ids).map do |instance_attributes| 
+            instantiate_record instance_attributes
+          end
+        rescue ::RightAws::AwsError
+          found = []
         end
         
         raise ActiveResource::ResourceNotFound.new("Couldn't find instance #{ids.first}.") if (ids.size == 1 && found.size == 0)

@@ -272,10 +272,13 @@ module Awsymandias
         @unlaunched_instances = metadata[:unlaunched_instances]
       
         unless metadata[:instances].empty?
-          live_instances = Awsymandias::Instance.find(:all, :instance_ids =>                                   
-                                                      metadata[:instances].values.map { |inst| inst[:aws_instance_id] }
-                                                     ).index_by(&:instance_id)
-          metadata[:instances] = metadata[:instances]
+          begin
+            live_instances = Awsymandias::Instance.find(:all, :instance_ids =>                                   
+                                                        metadata[:instances].values.map { |inst| inst[:aws_instance_id] }
+                                                       ).index_by(&:instance_id)
+          rescue ActiveResource::ResourceNotFound
+            live_instances = {}
+          end
           metadata[:instances].each_pair do |instance_name, instance_metadata|
             if live_instances[instance_metadata[:aws_instance_id]]
               @instances[instance_name] = live_instances[instance_metadata[:aws_instance_id]]

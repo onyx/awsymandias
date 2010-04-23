@@ -8,7 +8,7 @@ module Awsymandias
     attr_accessor :name
       
     self.site = "mu"
-  
+    
     def id;          instance_id;      end
     def instance_id; aws_instance_id;  end
     def public_dns;  dns_name;         end
@@ -51,7 +51,7 @@ module Awsymandias
     end
     
     def reload
-      load( RightAws.connection.describe_instances(self.aws_instance_id).first )
+      load self.class.fix_attributes_for_private_ip( RightAws.connection.describe_instances(self.aws_instance_id).first ) 
     end
     
     def snapshot_attached?(snapshot_id)
@@ -116,7 +116,7 @@ module Awsymandias
         
         begin
           found = RightAws.connection.describe_instances(ids).map do |instance_attributes| 
-            instantiate_record instance_attributes
+            instantiate_record fix_attributes_for_private_ip( instance_attributes )
           end
         rescue ::RightAws::AwsError
           found = []
@@ -127,15 +127,26 @@ module Awsymandias
       end
 
       def launch(opts={})
-        opts.assert_valid_keys :image_id, :key_name, :instance_type, :availability_zone, :user_data, :group_ids
+        opts.assert_valid_keys :image_id, :key_name, :instance_type, :availability_zone, :user_data, :group_ids, :subnet_id
         opts[:instance_type] = opts[:instance_type].name if opts[:instance_type].is_a?(Awsymandias::EC2::InstanceType)
+        opts[:group_ids] = '' if !opts[:subnet_id].blank?  # You can't pass Security Groups and a VPC Subnet.  Respect the Subnet.
       
         response = Awsymandias::RightAws.connection.run_instances *run_instance_opts_to_args(opts)
         sleep 2 # There's a race condition where sometimes the instance is launched but the web service doesn't recognize it yet.
         find(response.first[:aws_instance_id])
       end
       
+      def fix_attributes_for_private_ip instance_attributes
+        if !instance_attributes[:private_ip_address].blank? && instance_attributes[:dns_name].blank?
+          dns_name_from_private_ip = instance_attributes[:private_ip_address]
+          instance_attributes[:dns_name] = dns_name_from_private_ip
+          instance_attributes[:private_dns_name] = dns_name_from_private_ip
+        end
+        instance_attributes
+      end
+
       private
+      
       
       def run_instance_opts_to_args(opts)
         [
@@ -151,7 +162,8 @@ module Awsymandias
          opts[:kernel_id], 
          opts[:ramdisk_id], 
          opts[:availability_zone], 
-         opts[:block_device_mappings]
+         opts[:block_device_mappings],
+         opts[:subnet_id]
         ]
       end
     end

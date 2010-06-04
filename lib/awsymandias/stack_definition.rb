@@ -2,7 +2,7 @@ module Awsymandias
   class StackDefinition
     include Awsymandias::Taggable
     include Awsymandias::Notable
-    attr_reader :name, :defined_instances, :defined_volumes, :defined_roles, :defined_load_balancers
+    attr_reader :name, :defined_instances, :defined_volumes, :defined_roles, :defined_load_balancers, :defined_subnet_id
     
     def initialize(name)
       @name = name.to_s
@@ -10,6 +10,7 @@ module Awsymandias
       @defined_volumes = {}
       @defined_roles = {}
       @defined_load_balancers = {}
+      @defined_subnet_id = nil
     end
     
     def build_stack
@@ -17,7 +18,8 @@ module Awsymandias
         :instances => defined_instances,
         :volumes => defined_volumes,
         :roles => defined_roles,
-        :load_balancers => defined_load_balancers
+        :load_balancers => defined_load_balancers,
+        :subnet_id => defined_subnet_id
       )
     end
     
@@ -45,6 +47,10 @@ module Awsymandias
     def role(name, *instance_names)
       @defined_roles[name] ||= []
       @defined_roles[name] += instance_names.map { |name| name.to_s }
+    end
+    
+    def vpc_subnet_id subnet
+      @defined_subnet_id = subnet
     end
     
     def terminate!; destroy; end

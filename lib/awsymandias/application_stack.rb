@@ -2,7 +2,7 @@ module Awsymandias
   class ApplicationStack
     include Awsymandias::Taggable
     include Awsymandias::Notable
-    attr_reader :name, :simpledb_domain, :unlaunched_instances, :instances, :volumes, :roles, :unlaunched_load_balancers, :load_balancers
+    attr_reader :name, :simpledb_domain, :unlaunched_instances, :instances, :volumes, :roles, :unlaunched_load_balancers, :load_balancers, :subnet_id
 
     DEFAULT_SIMPLEDB_DOMAIN = "application-stack"
 
@@ -28,7 +28,7 @@ module Awsymandias
     end
 
     def initialize(name, opts={})
-      opts.assert_valid_keys :instances, :simpledb_domain, :volumes, :roles, :load_balancers
+      opts.assert_valid_keys :instances, :simpledb_domain, :volumes, :roles, :load_balancers, :subnet_id
 
       @name = name
       @simpledb_domain = opts[:simpledb_domain] || DEFAULT_SIMPLEDB_DOMAIN
@@ -40,6 +40,7 @@ module Awsymandias
       @unlaunched_load_balancers = {}
       @terminating = false
       @terminating_instances = {}
+      @subnet_id = opts[:subnet_id]
       
       if opts[:roles]
         @roles = opts[:roles]
@@ -87,6 +88,7 @@ module Awsymandias
       store_app_stack_metadata!
 
       @unlaunched_instances.each_pair do |instance_name, params|
+        params[:subnet_id] ||= @subnet_id
         @instances[instance_name] = Awsymandias::Instance.launch(params)
         @instances[instance_name].name = instance_name
         @unlaunched_instances.delete instance_name
@@ -231,7 +233,7 @@ module Awsymandias
     private
 
     def store_app_stack_metadata!
-      metadata = {}
+      metadata = { :subnet_id => @subnet_id }
       
       [:unlaunched_instances, :unlaunched_load_balancers, :roles].each do |item_name|
         metadata[item_name] = instance_variable_get "@#{item_name}"
@@ -253,6 +255,8 @@ module Awsymandias
 
     def reload_from_metadata!
       metadata = Awsymandias::Metadata.get @simpledb_domain, @name 
+    
+      @subnet_id = metadata[:subnet_id]
     
       unless metadata.empty?
         metadata[:unlaunched_load_balancers] ||= []

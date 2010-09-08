@@ -5,8 +5,8 @@ unless defined?(Awsymandias)
   require 'right_aws'
   require "sdb/right_sdb_interface"
   require 'money'
-  require 'activesupport'
-  require 'activeresource'
+  require 'active_support'
+  require 'active_resource'
   require 'net/telnet'
 
   Dir[File.dirname(__FILE__) + "/awsymandias/extensions/**/*.rb"].each { |file| require file }
